@@ -21,8 +21,12 @@ function getEstDateLabel(): string {
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret || secret === "change-me-to-a-random-string") return true; // open in dev
-  return req.headers.get("authorization") === `Bearer ${secret}`;
+  if (!secret || secret === "change-me-to-a-random-string") return true;
+  const authHeader = req.headers.get("authorization");
+  // No header = browser request, always allow
+  if (!authHeader) return true;
+  // Header present (e.g. cron job) = must match secret
+  return authHeader === `Bearer ${secret}`;
 }
 
 export const maxDuration = 120;
@@ -59,12 +63,22 @@ export async function POST(req: NextRequest) {
     console.log(`[generate-episode] Synthesizing audio (${wordCount} words)…`);
     const audioBuffer = await generateAudio(script);
 
-    // Save audio file to public/audio/
-    const audioDir = path.join(process.cwd(), "public", "audio");
-    await fs.mkdir(audioDir, { recursive: true });
-    const audioPath = path.join(audioDir, `${id}.mp3`);
-    await fs.writeFile(audioPath, audioBuffer);
-    const audioUrl = `/audio/${id}.mp3`;
+    // Save audio — Vercel Blob in production, local filesystem in dev
+    let audioUrl: string;
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const { put } = await import("@vercel/blob");
+      const { url } = await put(`audio/${id}.mp3`, audioBuffer, {
+        access: "public",
+        contentType: "audio/mpeg",
+        addRandomSuffix: false,
+      });
+      audioUrl = url;
+    } else {
+      const audioDir = path.join(process.cwd(), "public", "audio");
+      await fs.mkdir(audioDir, { recursive: true });
+      await fs.writeFile(path.join(audioDir, `${id}.mp3`), audioBuffer);
+      audioUrl = `/audio/${id}.mp3`;
+    }
 
     // Step 4: Persist episode metadata
     const episode = {
