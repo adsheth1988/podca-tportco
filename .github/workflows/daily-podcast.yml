@@ -1,0 +1,30 @@
+name: Daily Podcast Generation
+
+on:
+  schedule:
+    # 5:00 PM ET = 21:00 UTC (ET is UTC-5 in winter / UTC-4 in summer)
+    # Using 22:00 UTC to safely cover EDT (UTC-4) edge — adjust seasonally if needed
+    - cron: "0 22 * * 1-5"  # Weekdays only (Mon–Fri)
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Trigger episode generation
+        run: |
+          response=$(curl -s -o body.txt -w "%{http_code}" \
+            -X POST "${{ secrets.APP_URL }}/api/generate-episode" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP $response"
+          cat body.txt
+          if [ "$response" != "200" ]; then
+            echo "Generation failed with status $response"
+            exit 1
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "Episode generation failed — check logs above"
