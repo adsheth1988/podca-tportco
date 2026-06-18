@@ -66,13 +66,18 @@ export async function POST(req: NextRequest) {
     // Save audio — Vercel Blob in production, local filesystem in dev
     let audioUrl: string;
     if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const { put } = await import("@vercel/blob");
-      const { url } = await put(`audio/${id}.mp3`, audioBuffer, {
-        access: "public",
-        contentType: "audio/mpeg",
-        addRandomSuffix: false,
-      });
-      audioUrl = url;
+      try {
+        const { put } = await import("@vercel/blob");
+        const { url } = await put(`audio/${id}.mp3`, audioBuffer, {
+          access: "public",
+          contentType: "audio/mpeg",
+          addRandomSuffix: false,
+        });
+        audioUrl = url;
+      } catch (blobErr) {
+        const msg = blobErr instanceof Error ? blobErr.message : String(blobErr);
+        throw new Error(`Blob audio upload failed — check BLOB_READ_WRITE_TOKEN is correctly linked in Vercel Storage: ${msg}`);
+      }
     } else {
       const audioDir = path.join(process.cwd(), "public", "audio");
       await fs.mkdir(audioDir, { recursive: true });
