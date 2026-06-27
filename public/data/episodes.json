@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "2026-06-27",
+    "date": "2026-06-27",
+    "status": "ready",
+    "script": null,
+    "audioUrl": "https://github.com/adsheth1988/podcastportco/releases/download/episode-2026-06-27/2026-06-27.mp3",
+    "durationSeconds": 560,
+    "wordCount": 1513,
+    "articleCount": 32,
+    "generatedAt": "2026-06-27T13:49:14.743Z",
+    "errorMessage": null,
+    "createdAt": "2026-06-27T13:49:14.743Z"
+  }
+]
