@@ -55,8 +55,8 @@ jobs:
             exit 0
           fi
 
-          # Delete existing release for this date if re-running
-          gh release delete "$TAG" --yes 2>/dev/null || true
+          # Delete existing release + tag if re-running (--cleanup-tag prevents stale tag blocking re-create)
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 
           gh release create "$TAG" \
             --title "Episode ${DATE}" \
