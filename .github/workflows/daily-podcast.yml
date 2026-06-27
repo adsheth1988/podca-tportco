@@ -2,29 +2,76 @@ name: Daily Podcast Generation
 
 on:
   schedule:
-    # 5:00 PM ET = 21:00 UTC (ET is UTC-5 in winter / UTC-4 in summer)
-    # Using 22:00 UTC to safely cover EDT (UTC-4) edge — adjust seasonally if needed
-    - cron: "0 22 * * 1-5"  # Weekdays only (Mon–Fri)
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+    # 5 PM ET weekdays. ET = UTC-5 (EST) / UTC-4 (EDT).
+    # 22:00 UTC = 5 PM EST (winter). In summer (EDT) this fires at 6 PM — acceptable.
+    - cron: "0 22 * * 1-5"
+  workflow_dispatch: # Manual trigger from GitHub UI
 
 jobs:
   generate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    permissions:
+      contents: write # needed to commit episode JSON and create releases
 
     steps:
-      - name: Trigger episode generation
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GOOGLE_TTS_API_KEY: ${{ secrets.GOOGLE_TTS_API_KEY }}
+          MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
+          THENEWSAPI_KEY: ${{ secrets.THENEWSAPI_KEY }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: npx tsx scripts/generate-episode.ts
+
+      - name: Get episode date (ET)
+        id: date
+        run: echo "date=$(TZ='America/New_York' date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Upload MP3 to GitHub Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          response=$(curl -s -o body.txt -w "%{http_code}" \
-            -X POST "${{ secrets.APP_URL }}/api/generate-episode" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
-          echo "HTTP $response"
-          cat body.txt
-          if [ "$response" != "200" ]; then
-            echo "Generation failed with status $response"
-            exit 1
+          DATE=${{ steps.date.outputs.date }}
+          TAG="episode-${DATE}"
+          MP3="public/audio/${DATE}.mp3"
+
+          if [ ! -f "$MP3" ]; then
+            echo "MP3 not found at $MP3 — pipeline may have skipped (episode already exists)"
+            exit 0
           fi
 
-      - name: Notify on failure
-        if: failure()
-        run: echo "Episode generation failed — check logs above"
+          # Delete existing release for this date if re-running
+          gh release delete "$TAG" --yes 2>/dev/null || true
+
+          gh release create "$TAG" \
+            --title "Episode ${DATE}" \
+            --notes "QQQM Daily Podcast — ${DATE}" \
+            --latest=false
+
+          gh release upload "$TAG" "$MP3" --clobber
+
+          echo "Uploaded to: https://github.com/${{ github.repository }}/releases/download/${TAG}/${DATE}.mp3"
+
+      - name: Commit episode data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public/data/
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "episode: ${{ steps.date.outputs.date }}"
+          git push

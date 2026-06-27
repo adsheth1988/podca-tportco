@@ -19,9 +19,9 @@ export default function Home() {
 
   async function fetchEpisodes() {
     try {
-      const res = await fetch("/api/episodes");
-      const data = await res.json();
-      const list: Episode[] = data.episodes ?? [];
+      const res = await fetch("/data/episodes.json", { cache: "no-store" });
+      if (!res.ok) throw new Error("not found");
+      const list: Episode[] = await res.json();
       setEpisodes(list);
       if (list.length > 0 && !activeId) {
         selectEpisode(list[0].id);
@@ -34,9 +34,10 @@ export default function Home() {
   async function selectEpisode(id: string) {
     setActiveId(id);
     try {
-      const res = await fetch(`/api/episodes/${id}`);
-      const data = await res.json();
-      setActiveEpisode(data.episode);
+      const res = await fetch(`/data/episodes/${id}.json`, { cache: "no-store" });
+      if (!res.ok) throw new Error("not found");
+      const episode: Episode = await res.json();
+      setActiveEpisode(episode);
     } catch {
       setStatusMsg("Failed to load episode.");
     }

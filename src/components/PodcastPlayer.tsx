@@ -41,9 +41,9 @@ export default function PodcastPlayer({ episode }: Props) {
 
   async function loadScript() {
     if (scriptLoaded) return;
-    const res = await fetch(`/api/episodes/${episode.id}`);
-    const data = await res.json();
-    setFullScript(data.episode?.script ?? "");
+    const res = await fetch(`/data/episodes/${episode.id}.json`, { cache: "no-store" });
+    const data: Episode = await res.json();
+    setFullScript(data.script ?? "");
     setScriptLoaded(true);
   }
 
