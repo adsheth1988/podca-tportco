@@ -46,10 +46,22 @@ function formatPnL(snapshot: PortfolioSnapshot): string {
   return `Portfolio: ${pct} (${pnl}) | Current value: ${value} | Base: $100,000`;
 }
 
+function formatPriceTable(snapshot: PortfolioSnapshot): string {
+  if (snapshot.prices.length === 0) return "  (price data unavailable)";
+  return PORTFOLIO_BY_WEIGHT.map(h => {
+    const p = snapshot.prices.find(px => px.ticker === h.ticker);
+    if (!p) return `  ${h.ticker.padEnd(5)} — price unavailable`;
+    const sign = p.changePercent >= 0 ? "+" : "";
+    return `  ${h.ticker.padEnd(5)} $${p.price.toFixed(2).padStart(8)}  ${sign}${p.changeDollar.toFixed(2).padStart(7)}  ${sign}${p.changePercent.toFixed(2)}%`;
+  }).join("\n");
+}
+
 function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: PortfolioSnapshot): string {
   const portfolioLines = PORTFOLIO_BY_WEIGHT
     .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio`)
     .join("\n");
+
+  const priceTable = formatPriceTable(snapshot);
 
   const tickerNewsText = news.portfolioArticles
     .slice(0, 14)
@@ -77,7 +89,11 @@ ${portfolioPnLText}
 QQQM TOP 10 HOLDINGS (listed largest to smallest — prioritize coverage by weight):
 ${portfolioLines}
 
-HOLDINGS WITH NO NEWS TODAY (one sentence each, then move on): ${noNewsHoldings || "none"}
+TODAY'S INDIVIDUAL STOCK PRICE MOVES (mandatory — use exact figures for every holding):
+  TICKER  CLOSE PRICE   $ CHANGE   % CHANGE
+${priceTable}
+
+HOLDINGS WITH NO NEWS TODAY: ${noNewsHoldings || "none"}
 
 TICKER-SPECIFIC NEWS (ranked by relevance):
 ${tickerNewsText || "No ticker-specific news found for today."}
@@ -106,9 +122,11 @@ STRUCTURE:
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQM. This should feel like a proper news segment.
 
 ⑤ HOLDINGS RUNDOWN (~1,000 words)
-   Cover the remaining 9 holdings in order of portfolio weight. Allocate airtime proportionally — heavier weights get more sentences.
-   For each: what happened today → key figures → what to watch next.
-   If a holding had no news, one sentence only: note the quiet session and the current price move.
+   Cover ALL 10 holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
+   MANDATORY FOR EVERY HOLDING — open with the session price move using exact figures from the price table above:
+     Example: "Apple closed at $185.20, down one point four two percent on the session, shedding two dollars and sixty-seven cents."
+   Then: news context (if any) → analyst commentary → what to watch next.
+   For holdings with no news: still state the price move, then give one sentence of context (broader sector trend, relative performance vs index, or upcoming catalyst).
    Use natural broadcast transitions between holdings ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~100 words)
@@ -120,6 +138,8 @@ STRUCTURE:
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
 - No financial advice. Report facts and analyst commentary. Never "you should buy/sell."
+- Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
+- Spell out numbers as words when spoken (e.g. "one point four two percent" not "1.42%").
 - Cite specific figures and sources when available.
 - Output the spoken script only. Begin with "Hello, I am Josh Weinberg..."`;
 }
