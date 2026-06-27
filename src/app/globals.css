@@ -233,11 +233,13 @@ body {
 .wl-card {
   padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--border2);
-  cursor: default;
+  cursor: pointer;
   transition: background 0.1s;
+  border-left: 3px solid transparent;
 }
 
-.wl-card:hover { background: var(--surface); }
+.wl-card:hover        { background: var(--surface); }
+.wl-card--active      { background: var(--surface); border-left-color: var(--accent); }
 
 .wl-card-top {
   display: flex;
