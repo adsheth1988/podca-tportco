@@ -1,124 +1,240 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import PodcastPlayer from "@/components/PodcastPlayer";
 import EpisodeCard from "@/components/EpisodeCard";
-import HoldingsBanner from "@/components/HoldingsBanner";
 import { Episode } from "@/lib/storage";
+import { PORTFOLIO_BY_WEIGHT } from "@/config/portfolio";
+
+interface Quote {
+  ticker: string;
+  price: number;
+  changePercent: number;
+  changeDollar: number;
+}
+
+const ETF_NAMES: Record<string, string> = {
+  SPY:  "S&P 500 ETF",
+  QQQM: "Nasdaq-100 ETF",
+  SMH:  "Semiconductor ETF",
+  MEME: "Roundhill Meme ETF",
+};
+
+function fmt(n: number, decimals = 2) {
+  return n.toFixed(decimals);
+}
+
+function isMarketOpen(): boolean {
+  const now = new Date();
+  const et = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const day = et.getDay(); // 0=Sun, 6=Sat
+  const h = et.getHours();
+  const m = et.getMinutes();
+  const mins = h * 60 + m;
+  if (day === 0 || day === 6) return false;
+  return mins >= 570 && mins < 960; // 9:30–16:00
+}
+
+function useETClock() {
+  const [time, setTime] = useState("");
+  useEffect(() => {
+    const tick = () => {
+      setTime(
+        new Date().toLocaleTimeString("en-US", {
+          timeZone: "America/New_York",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        }) + " ET"
+      );
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return time;
+}
 
 export default function Home() {
-  const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [episodes, setEpisodes]         = useState<Episode[]>([]);
+  const [activeId, setActiveId]         = useState<string | null>(null);
   const [activeEpisode, setActiveEpisode] = useState<Episode | null>(null);
-  const [generating, setGenerating] = useState(false);
-  const [statusMsg, setStatusMsg] = useState("");
+  const [quotes, setQuotes]             = useState<Quote[]>([]);
+  const [marketOpen, setMarketOpen]     = useState(false);
+  const clock = useETClock();
 
-  useEffect(() => {
-    fetchEpisodes();
-  }, []);
-
-  async function fetchEpisodes() {
+  const fetchEpisodes = useCallback(async () => {
     try {
       const res = await fetch("/data/episodes.json", { cache: "no-store" });
-      if (!res.ok) throw new Error("not found");
+      if (!res.ok) return;
       const list: Episode[] = await res.json();
       setEpisodes(list);
-      if (list.length > 0 && !activeId) {
-        selectEpisode(list[0].id);
-      }
-    } catch {
-      setStatusMsg("Failed to load episodes.");
-    }
-  }
+      if (list.length > 0) selectEpisode(list[0].id);
+    } catch { /* silent */ }
+  }, []); // eslint-disable-line
+
+  const fetchQuotes = useCallback(async () => {
+    try {
+      const res = await fetch("/api/market-data", { cache: "no-store" });
+      if (!res.ok) return;
+      const data = await res.json();
+      setQuotes(data.quotes ?? []);
+    } catch { /* silent */ }
+  }, []);
 
   async function selectEpisode(id: string) {
     setActiveId(id);
     try {
       const res = await fetch(`/data/episodes/${id}.json`, { cache: "no-store" });
-      if (!res.ok) throw new Error("not found");
-      const episode: Episode = await res.json();
-      setActiveEpisode(episode);
-    } catch {
-      setStatusMsg("Failed to load episode.");
-    }
+      if (!res.ok) return;
+      setActiveEpisode(await res.json());
+    } catch { /* silent */ }
   }
 
-  async function generateToday() {
-    setGenerating(true);
-    setStatusMsg("Fetching today's news…");
-    try {
-      const res = await fetch("/api/generate-episode");
-      const data = await res.json();
-      if (!res.ok) {
-        setStatusMsg(`Error: ${data.error}`);
-        return;
-      }
-      setStatusMsg("Episode generated!");
-      await fetchEpisodes();
-      selectEpisode(data.id);
-    } catch (e) {
-      setStatusMsg(`Failed: ${e}`);
-    } finally {
-      setGenerating(false);
-    }
-  }
+  useEffect(() => {
+    setMarketOpen(isMarketOpen());
+    fetchEpisodes();
+    fetchQuotes();
+    const quotesInterval = setInterval(fetchQuotes, 30_000);
+    const statusInterval = setInterval(() => setMarketOpen(isMarketOpen()), 60_000);
+    return () => {
+      clearInterval(quotesInterval);
+      clearInterval(statusInterval);
+    };
+  }, [fetchEpisodes, fetchQuotes]);
 
   return (
-    <div>
-      <header className="header">
-        <div className="header-logo">🎙️</div>
-        <div className="header-text">
-          <h1>QQQM Daily</h1>
-          <p>AI-generated market podcast · Top 10 holdings · Refreshed daily at 5 PM ET</p>
+    <div className="app-shell">
+
+      {/* ── Top Bar ──────────────────────────────────────────────────────── */}
+      <header className="top-bar">
+        <div className="top-bar-left">
+          <span className="tb-icon">📻</span>
+          <span className="tb-brand">Portfolio Podcast</span>
+          <span className="tb-divider" />
+          <span className="tb-sub">QQQM Daily</span>
+        </div>
+        <div className="top-bar-right">
+          <span className={`market-badge ${marketOpen ? "market-badge--open" : "market-badge--closed"}`}>
+            <span className="market-dot" />
+            {marketOpen ? "Market Open" : "Market Closed"}
+          </span>
+          <span className="tb-clock">{clock}</span>
         </div>
       </header>
 
-      <HoldingsBanner />
+      {/* ── ETF Ticker Bar ───────────────────────────────────────────────── */}
+      <div className="ticker-bar">
+        {quotes.length === 0 ? (
+          <span className="ticker-loading">Loading quotes…</span>
+        ) : (
+          quotes.map((q) => (
+            <div key={q.ticker} className="ticker-item">
+              <span className="ticker-sym">{q.ticker}</span>
+              <span className="ticker-price">${fmt(q.price)}</span>
+              <span className={`ticker-chg ${q.changePercent >= 0 ? "pos" : "neg"}`}>
+                {q.changePercent >= 0 ? "▲" : "▼"}{" "}
+                {q.changePercent >= 0 ? "+" : ""}{fmt(q.changePercent)}%
+              </span>
+            </div>
+          ))
+        )}
+      </div>
 
-      <div className="main-grid">
-        {/* Sidebar */}
-        <aside className="sidebar">
-          <div className="sidebar-header">Episodes</div>
-          {episodes.length === 0 ? (
-            <div className="empty-sidebar">No episodes yet. Generate your first one.</div>
-          ) : (
-            episodes.map((ep) => (
-              <EpisodeCard
-                key={ep.id}
-                episode={ep}
-                isActive={ep.id === activeId}
-                onClick={() => selectEpisode(ep.id)}
-              />
-            ))
-          )}
+      {/* ── Main Layout ──────────────────────────────────────────────────── */}
+      <div className="main-layout">
+
+        {/* ── Left Panel: Watchlist + Holdings ─────────────────────────── */}
+        <aside className="left-panel">
+
+          <div className="panel-section-header">Watchlist</div>
+
+          <div className="watchlist">
+            {quotes.length === 0 ? (
+              <div className="wl-loading">Fetching quotes…</div>
+            ) : (
+              quotes.map((q) => {
+                const pos = q.changePercent >= 0;
+                return (
+                  <div key={q.ticker} className="wl-card">
+                    <div className="wl-card-top">
+                      <div>
+                        <div className="wl-ticker">{q.ticker}</div>
+                        <div className="wl-name">{ETF_NAMES[q.ticker] ?? q.ticker}</div>
+                      </div>
+                      <div className="wl-price-col">
+                        <div className="wl-price">${fmt(q.price)}</div>
+                        <div className={`wl-chg ${pos ? "pos" : "neg"}`}>
+                          {pos ? "+" : ""}{fmt(q.changeDollar)} ({pos ? "+" : ""}{fmt(q.changePercent)}%)
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`wl-bar ${pos ? "wl-bar--pos" : "wl-bar--neg"}`}
+                         style={{ width: `${Math.min(Math.abs(q.changePercent) * 20, 100)}%` }} />
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="panel-section-header" style={{ marginTop: "0.5rem" }}>
+            QQQM Top 10
+          </div>
+
+          <div className="holdings-list">
+            {PORTFOLIO_BY_WEIGHT.map((h) => (
+              <div key={h.ticker} className="hl-row">
+                <div className="hl-left">
+                  <span className="hl-ticker">{h.ticker}</span>
+                  <span className="hl-name">{h.name.split(" ").slice(0, 2).join(" ")}</span>
+                </div>
+                <div className="hl-right">
+                  <span className="hl-weight">{h.weight}%</span>
+                  <div className="hl-bar-track">
+                    <div className="hl-bar-fill" style={{ width: `${(h.weight / 9) * 100}%` }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </aside>
 
-        {/* Main panel */}
-        <main className="panel">
+        {/* ── Right Panel: Player + Episodes ───────────────────────────── */}
+        <main className="right-panel">
+
           {activeEpisode ? (
-            <PodcastPlayer episode={activeEpisode} />
+            <>
+              <div className="section-label">Now Playing</div>
+              <PodcastPlayer episode={activeEpisode} />
+            </>
           ) : (
-            <div className="empty-panel">
-              <span style={{ fontSize: "3rem" }}>🎙️</span>
-              <h2>No episode selected</h2>
-              <p>
-                {episodes.length === 0
-                  ? "Generate today's episode to get started."
-                  : "Select an episode from the sidebar."}
-              </p>
+            <div className="empty-state">
+              <div className="empty-icon">📻</div>
+              <h2>No episode loaded</h2>
+              <p>Episodes are generated daily at 5 PM ET on weekdays.</p>
               {episodes.length === 0 && (
-                <>
-                  <button
-                    className="generate-btn"
-                    onClick={generateToday}
-                    disabled={generating}
-                  >
-                    {generating ? "Generating…" : "Generate Today's Episode"}
-                  </button>
-                  {statusMsg && <p className="status-msg">{statusMsg}</p>}
-                </>
+                <p className="empty-sub">Check back after the next market close.</p>
               )}
             </div>
+          )}
+
+          {episodes.length > 0 && (
+            <>
+              <div className="section-label" style={{ marginTop: "2rem" }}>
+                Past Episodes
+              </div>
+              <div className="episode-grid">
+                {episodes.map((ep) => (
+                  <EpisodeCard
+                    key={ep.id}
+                    episode={ep}
+                    isActive={ep.id === activeId}
+                    onClick={() => selectEpisode(ep.id)}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </main>
       </div>
