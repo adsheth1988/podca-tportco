@@ -15,8 +15,7 @@ export const PORTFOLIO_HOLDINGS: Holding[] = [
   { ticker: "AMZN",  name: "Amazon.com Inc.",               weight:  5.52, sector: "Consumer Discretionary" },
   { ticker: "AVGO",  name: "Broadcom Inc.",                 weight:  4.61, sector: "Technology" },
   { ticker: "META",  name: "Meta Platforms Inc.",           weight:  4.48, sector: "Communication Services" },
-  { ticker: "GOOGL", name: "Alphabet Inc. Class A",         weight:  4.12, sector: "Communication Services" },
-  { ticker: "GOOG",  name: "Alphabet Inc. Class C",         weight:  3.89, sector: "Communication Services" },
+  { ticker: "GOOGL", name: "Alphabet Inc. (Google)",         weight:  8.01, sector: "Communication Services" },
   { ticker: "TSLA",  name: "Tesla Inc.",                    weight:  3.54, sector: "Consumer Discretionary" },
   { ticker: "COST",  name: "Costco Wholesale Corporation",  weight:  2.81, sector: "Consumer Staples" },
 ];

@@ -108,7 +108,7 @@ Target: exactly ${TARGET_WORD_COUNT} words total.
 STRUCTURE:
 
 ① WELCOME & DATE (~60 words)
-   Open with exactly: "Hello, I am Josh Weinberg and today is ${dateLabel} and The Portfolio Podcast QQQM update is as of ${snapshot.generatedAtEST}."
+   Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dateLabel} session recap."
    Then immediately state the overall portfolio performance: the percentage change and the dollar P&L on a $100,000 portfolio base. Use the figures provided above. Keep it factual and punchy.
 
 ② COLD OPEN (~50 words)
@@ -138,6 +138,7 @@ STRUCTURE:
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
 - No financial advice. Report facts and analyst commentary. Never "you should buy/sell."
+- NEVER say "today" or reference the current day of the week. Always name the session by its weekday: "on ${dateLabel.split(",")[0]}" or "in ${dateLabel.split(",")[0]}'s session." Listeners may hear this episode days later.
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
 - Spell out numbers as words when spoken (e.g. "one point four two percent" not "1.42%").
 - Cite specific figures and sources when available.

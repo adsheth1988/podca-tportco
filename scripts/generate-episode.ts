@@ -17,18 +17,31 @@ import { generateAudio, estimateDurationSeconds } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import type { Episode } from "../src/types/episode";
 
-function getEstDateISO(): string {
-  const estString = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
-  return new Date(estString).toISOString().slice(0, 10);
+function getEstNow(): Date {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
 }
 
-function getEstDateLabel(): string {
-  return new Date().toLocaleDateString("en-US", {
+function getEstDateISO(): string {
+  return getEstNow().toISOString().slice(0, 10);
+}
+
+// Returns the most recent trading day (Mon–Fri).
+// Weekend runs (Sat/Sun) reference Friday's session so the script doesn't
+// say "today is Saturday" when all market data is from Friday's close.
+function getLastTradingDay(): Date {
+  const et = getEstNow();
+  const day = et.getDay(); // 0=Sun, 6=Sat
+  if (day === 6) et.setDate(et.getDate() - 1); // Sat → Fri
+  if (day === 0) et.setDate(et.getDate() - 2); // Sun → Fri
+  return et;
+}
+
+function getMarketDateLabel(): string {
+  return getLastTradingDay().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
-    timeZone: "America/New_York",
   });
 }
 
@@ -64,7 +77,7 @@ async function main() {
 
   // Step 2: Generate script with Claude
   console.log("[generate] Step 2: Generating script with Claude…");
-  const script = await generatePodcastScript(news, getEstDateLabel(), snapshot);
+  const script = await generatePodcastScript(news, getMarketDateLabel(), snapshot);
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
   console.log(`[generate] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);
