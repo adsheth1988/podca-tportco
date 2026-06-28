@@ -56,7 +56,22 @@ function formatPriceTable(snapshot: PortfolioSnapshot): string {
   }).join("\n");
 }
 
-function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: PortfolioSnapshot): string {
+function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: PortfolioSnapshot, isWeekend: boolean): string {
+  const dayName = dateLabel.split(",")[0]; // e.g. "Friday"
+
+  // Weekday: name the day + exact pull time. Weekend: reference Friday's close only, no time.
+  const sessionContext = isWeekend
+    ? `SESSION: ${dateLabel} — as of market close (4:00 PM ET)`
+    : `SESSION: ${dateLabel} — as of ${snapshot.generatedAtEST}`;
+
+  const welcomeInstruction = isWeekend
+    ? `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
+    : `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
+
+  const sessionRule = isWeekend
+    ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
+    : `Always reference this session as "${dayName}'s session" or "as of ${snapshot.generatedAtEST} on ${dayName}." NEVER say "today."`;
+
   const portfolioLines = PORTFOLIO_BY_WEIGHT
     .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio`)
     .join("\n");
@@ -82,21 +97,20 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
 
   return `You are the host of "The Portfolio Podcast". Your name is Josh Weinberg. Your tone is calm, authoritative, and direct. Think Bloomberg Radio: professional, data-driven, no hype.
 
-DATE: ${dateLabel}
-GENERATION TIME: ${snapshot.generatedAtEST}
+${sessionContext}
 ${portfolioPnLText}
 
 QQQM TOP 10 HOLDINGS (listed largest to smallest — prioritize coverage by weight):
 ${portfolioLines}
 
-TODAY'S INDIVIDUAL STOCK PRICE MOVES (mandatory — use exact figures for every holding):
+${dayName.toUpperCase()} PRICE MOVES (mandatory — use exact figures for every holding):
   TICKER  CLOSE PRICE   $ CHANGE   % CHANGE
 ${priceTable}
 
-HOLDINGS WITH NO NEWS TODAY: ${noNewsHoldings || "none"}
+HOLDINGS WITH NO NEWS: ${noNewsHoldings || "none"}
 
 TICKER-SPECIFIC NEWS (ranked by relevance):
-${tickerNewsText || "No ticker-specific news found for today."}
+${tickerNewsText || "No ticker-specific news found."}
 
 BROAD MARKET CONTEXT:
 ${macroNewsText || "No macro news available."}
@@ -108,39 +122,39 @@ Target: exactly ${TARGET_WORD_COUNT} words total.
 STRUCTURE:
 
 ① WELCOME & DATE (~60 words)
-   Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dateLabel} session recap."
-   Then immediately state the overall portfolio performance: the percentage change and the dollar P&L on a $100,000 portfolio base. Use the figures provided above. Keep it factual and punchy.
+   ${welcomeInstruction}
+   Keep it factual and punchy.
 
 ② COLD OPEN (~50 words)
-   Drop straight into the single most important story of the day — no additional introduction.
-   Hook the listener immediately. End on a half-beat that makes them want to keep listening.
+   Drop straight into the single most important story of the session — no additional introduction.
+   Hook the listener immediately. End on a hard factual statement that creates tension.
 
 ③ MARKET SNAPSHOT (~100 words)
-   Three sentences maximum on macro context: what drove the broad market today, any sector rotation, and one relevant macro data point (Fed, rates, jobs, etc.) if available. Crisp and factual.
+   Three sentences maximum on macro context: what drove the broad market in the session, any sector rotation, and one relevant macro data point (Fed, rates, jobs, etc.) if available. Include at least one index-level number (e.g. Nasdaq or S&P 500 % move). Crisp and factual.
 
 ④ TOP STORY (~200 words)
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQM. This should feel like a proper news segment.
 
 ⑤ HOLDINGS RUNDOWN (~1,000 words)
-   Cover ALL 10 holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
+   Cover ALL 9 remaining holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
    MANDATORY FOR EVERY HOLDING — open with the session price move using exact figures from the price table above:
-     Example: "Apple closed at $185.20, down one point four two percent on the session, shedding two dollars and sixty-seven cents."
+     Example: "Apple closed at one hundred eighty-five dollars and twenty cents, down one point four two percent on the session."
    Then: news context (if any) → analyst commentary → what to watch next.
-   For holdings with no news: still state the price move, then give one sentence of context (broader sector trend, relative performance vs index, or upcoming catalyst).
-   Use natural broadcast transitions between holdings ("Turning to...", "Over at...", "Meanwhile...").
+   For holdings with no news: still state the price move, then give one sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
+   Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~100 words)
    Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders.
 
 ⑦ OUTRO (~50 words)
-   Clean sign-off. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to keep an eye on overnight.
+   Clean sign-off. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to watch for.
 
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
 - No financial advice. Report facts and analyst commentary. Never "you should buy/sell."
-- NEVER say "today" or reference the current day of the week. Always name the session by its weekday: "on ${dateLabel.split(",")[0]}" or "in ${dateLabel.split(",")[0]}'s session." Listeners may hear this episode days later.
+- ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
-- Spell out numbers as words when spoken (e.g. "one point four two percent" not "1.42%").
+- Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").
 - Cite specific figures and sources when available.
 - Output the spoken script only. Begin with "Hello, I am Josh Weinberg..."`;
 }
@@ -154,10 +168,11 @@ interface AnthropicResponse {
 export async function generatePodcastScript(
   news: AggregatedNewsResult,
   dateLabel: string,
-  snapshot: PortfolioSnapshot
+  snapshot: PortfolioSnapshot,
+  isWeekend = false
 ): Promise<string> {
   const apiKey = requireApiKey();
-  const prompt = buildPrompt(news, dateLabel, snapshot);
+  const prompt = buildPrompt(news, dateLabel, snapshot, isWeekend);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60_000);

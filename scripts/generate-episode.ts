@@ -45,6 +45,11 @@ function getMarketDateLabel(): string {
   });
 }
 
+function isWeekendRun(): boolean {
+  const day = getEstNow().getDay();
+  return day === 0 || day === 6;
+}
+
 async function main() {
   const id = getEstDateISO();
   const repo = process.env.GITHUB_REPOSITORY ?? "adsheth1988/podcastportco";
@@ -77,7 +82,7 @@ async function main() {
 
   // Step 2: Generate script with Claude
   console.log("[generate] Step 2: Generating script with Claude…");
-  const script = await generatePodcastScript(news, getMarketDateLabel(), snapshot);
+  const script = await generatePodcastScript(news, getMarketDateLabel(), snapshot, isWeekendRun());
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
   console.log(`[generate] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);
