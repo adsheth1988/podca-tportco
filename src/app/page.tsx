@@ -213,7 +213,7 @@ export default function Home() {
             <div className="empty-state">
               <div className="empty-icon">📻</div>
               <h2>No episode loaded</h2>
-              <p>Episodes are generated daily at 5 PM ET on weekdays.</p>
+              <p>Episodes are generated daily at 4:45 PM ET on weekdays.</p>
               {episodes.length === 0 && (
                 <p className="empty-sub">Check back after the next market close.</p>
               )}
