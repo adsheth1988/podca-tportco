@@ -237,6 +237,12 @@ export default function Home() {
           )}
         </main>
       </div>
+
+      {/* ── Disclosure Footer ────────────────────────────────────────────── */}
+      <footer className="disclosure-footer">
+        &quot;Josh Weinberg&quot; is an AI-generated voice, not a real person. Every episode is
+        written and narrated by AI — this is not financial advice.
+      </footer>
     </div>
   );
 }

@@ -65,8 +65,8 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     : `SESSION: ${dateLabel} — as of ${snapshot.generatedAtEST}`;
 
   const welcomeInstruction = isWeekend
-    ? `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
-    : `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
+    ? `Open with exactly: "Hello, I am Josh Weinberg — an AI-generated voice — and this is The Portfolio Podcast, an automated market recap. This is not financial advice. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
+    : `Open with exactly: "Hello, I am Josh Weinberg — an AI-generated voice — and this is The Portfolio Podcast, an automated market recap. This is not financial advice. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
 
   const sessionRule = isWeekend
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
@@ -152,6 +152,7 @@ STRUCTURE:
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
 - No financial advice. Report facts and analyst commentary. Never "you should buy/sell."
+- Never imply Josh Weinberg is a real person, a live broadcast, or a human-staffed newsroom. The opening AI-generated disclosure must be spoken exactly as given — do not shorten, soften, or omit it.
 - ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
 - Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").

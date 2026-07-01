@@ -82,6 +82,7 @@ export default function PodcastPlayer({ episode }: Props) {
         <div>
           <h2 className="player-title">QQQM Daily — {format(parseISO(episode.date), "MMMM d, yyyy")}</h2>
           <p className="player-subtitle">QQQM Daily · Top 10 Holdings Recap</p>
+          <p className="player-disclosure">AI-generated · Not financial advice</p>
         </div>
       </div>
 
