@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import path from "path";
 import { aggregatePortfolioNews } from "@/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "@/script/generator";
-import { generateAudio, estimateDurationSeconds } from "@/audio/tts";
+import { generateAudio, estimateDurationSeconds, withIntroStinger } from "@/audio/tts";
 import { fetchPortfolioSnapshot } from "@/lib/prices";
 import { saveEpisode, getEpisode } from "@/lib/storage";
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     // Step 3: Synthesize audio
     console.log(`[generate-episode] Synthesizing audio (${wordCount} words)…`);
-    const audioBuffer = await generateAudio(script);
+    const audioBuffer = await withIntroStinger(await generateAudio(script));
 
     // Save audio — Vercel Blob in production, local filesystem in dev
     let audioUrl: string;

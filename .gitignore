@@ -42,6 +42,7 @@ next-env.d.ts
 
 # generated podcast files (runtime artifacts)
 /public/audio/*.mp3
+!/public/audio/intro-stinger.mp3
 /public/audio/*.txt
 /public/audio/stingers/
 /data/episodes/*.json

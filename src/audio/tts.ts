@@ -3,6 +3,9 @@
 // Voice: onyx — deep, authoritative, broadcast-quality male voice
 // No SSML needed — pauses driven by punctuation in the script
 
+import fs from "fs/promises";
+import path from "path";
+
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const MODEL  = "tts-1-hd";
 const VOICE  = "onyx";
@@ -76,4 +79,18 @@ export async function generateAudio(script: string): Promise<Buffer> {
 
 export function estimateDurationSeconds(wordCount: number, wpm = 162): number {
   return Math.round((wordCount / wpm) * 60);
+}
+
+// Prepends the pre-rendered intro stinger (public/audio/intro-stinger.mp3) to
+// an episode's audio. Falls back to the episode audio alone if the stinger
+// hasn't been generated yet (see scripts/build-intro-stinger.ts).
+export async function withIntroStinger(episodeAudio: Buffer): Promise<Buffer> {
+  const introPath = path.join(process.cwd(), "public", "audio", "intro-stinger.mp3");
+  try {
+    const intro = await fs.readFile(introPath);
+    return Buffer.concat([intro, episodeAudio]);
+  } catch {
+    console.warn("[tts] intro-stinger.mp3 not found — run `npm run gen:stinger`. Skipping intro.");
+    return episodeAudio;
+  }
 }
