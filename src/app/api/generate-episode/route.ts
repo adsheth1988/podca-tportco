@@ -3,9 +3,10 @@ import fs from "fs/promises";
 import path from "path";
 import { aggregatePortfolioNews } from "@/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "@/script/generator";
-import { generateAudio, estimateDurationSeconds } from "@/audio/tts";
+import { generateAudio, estimateDurationSeconds, withIntroStinger } from "@/audio/tts";
 import { fetchPortfolioSnapshot } from "@/lib/prices";
 import { saveEpisode, getEpisode } from "@/lib/storage";
+import { notifyFailure } from "@/lib/alerts";
 
 function getEstDateISO(): string {
   const estString = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
@@ -21,11 +22,10 @@ function getEstDateLabel(): string {
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
+  // No secret configured (or still on the placeholder) — open, dev-only.
   if (!secret || secret === "change-me-to-a-random-string") return true;
+  // Secret is configured — every request must present it, no exceptions.
   const authHeader = req.headers.get("authorization");
-  // No header = browser request, always allow
-  if (!authHeader) return true;
-  // Header present (e.g. cron job) = must match secret
   return authHeader === `Bearer ${secret}`;
 }
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     // Step 3: Synthesize audio
     console.log(`[generate-episode] Synthesizing audio (${wordCount} words)…`);
-    const audioBuffer = await generateAudio(script);
+    const audioBuffer = await withIntroStinger(await generateAudio(script));
 
     // Save audio — Vercel Blob in production, local filesystem in dev
     let audioUrl: string;
@@ -124,6 +124,8 @@ export async function POST(req: NextRequest) {
       errorMessage: message,
       createdAt: new Date().toISOString(),
     }).catch(() => {});
+
+    await notifyFailure({ episodeId: id, message });
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
