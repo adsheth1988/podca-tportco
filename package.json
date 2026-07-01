@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "gen:stingers": "tsx scripts/generate-intro-stingers.ts",
-    "gen:stinger": "tsx scripts/build-intro-stinger.ts"
+    "gen:stinger": "tsx scripts/build-intro-stinger.ts",
+    "check:heartbeat": "tsx scripts/check-episode-heartbeat.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
