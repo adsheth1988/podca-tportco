@@ -15,6 +15,7 @@ import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "../src/script/generator";
 import { generateAudio, estimateDurationSeconds, withIntroStinger } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
+import { notifyFailure } from "../src/lib/alerts";
 import type { Episode } from "../src/types/episode";
 
 function getEstNow(): Date {
@@ -173,7 +174,9 @@ async function main() {
   console.log(`[generate] Done! Audio will be at: ${audioUrl}`);
 }
 
-main().catch((err) => {
-  console.error("[generate] Fatal error:", err);
+main().catch(async (err) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error("[generate] Fatal error:", message);
+  await notifyFailure({ episodeId: getEstDateISO(), message });
   process.exit(1);
 });

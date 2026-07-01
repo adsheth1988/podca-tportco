@@ -6,6 +6,7 @@ import { generatePodcastScript, countWords } from "@/script/generator";
 import { generateAudio, estimateDurationSeconds, withIntroStinger } from "@/audio/tts";
 import { fetchPortfolioSnapshot } from "@/lib/prices";
 import { saveEpisode, getEpisode } from "@/lib/storage";
+import { notifyFailure } from "@/lib/alerts";
 
 function getEstDateISO(): string {
   const estString = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
@@ -123,6 +124,8 @@ export async function POST(req: NextRequest) {
       errorMessage: message,
       createdAt: new Date().toISOString(),
     }).catch(() => {});
+
+    await notifyFailure({ episodeId: id, message });
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

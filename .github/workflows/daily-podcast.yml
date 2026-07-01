@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write # needed to commit episode JSON and create releases
+      issues: write   # needed to open a failure-alert issue if the pipeline breaks
 
     steps:
       - name: Checkout repo
@@ -38,6 +39,7 @@ jobs:
           MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
           THENEWSAPI_KEY: ${{ secrets.THENEWSAPI_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # used to open a failure-alert issue on error
         run: npx tsx scripts/generate-episode.ts
 
       - name: Get episode date (ET)
