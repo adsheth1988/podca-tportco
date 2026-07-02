@@ -9,7 +9,7 @@ import path from "path";
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const MODEL  = "tts-1-hd";
 const VOICE  = "onyx";
-const SPEED  = 0.95; // slightly under 1.0 — gives numbers room to land clearly
+const SPEED  = 1.08; // slightly over 1.0 — livelier, more energetic pace than a flat 1.0 read
 const MAX_CHARS = 4_000; // OpenAI hard limit is 4,096; leave headroom
 
 function requireApiKey(): string {
