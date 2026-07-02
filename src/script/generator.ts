@@ -156,7 +156,7 @@ FORMAT RULES (strictly enforced):
 - ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
 - Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").
-- Spell out all stock tickers as hyphenated letters so TTS reads them correctly: NVDA → N-V-D-A, AAPL → A-A-P-L, MSFT → M-S-F-T, AMZN → A-M-Z-N, AVGO → A-V-G-O, META → M-E-T-A, GOOGL → G-O-O-G-L, TSLA → T-S-L-A, COST → C-O-S-T. Write the company name first, then the ticker: "Apple, A-A-P-L".
+- Refer to every holding by company name only — NEVER speak the ticker symbol or spell it out letter by letter. Say "Apple," not "Apple, A-A-P-L" or "A-A-P-L." Use the ticker only to look up the right company/price in the data above; it should never appear in the spoken output.
 - Cite specific figures and sources when available.
 - Output the spoken script only. Begin with "Hello, I am Josh Weinberg..."`;
 }
