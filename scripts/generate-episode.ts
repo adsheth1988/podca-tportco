@@ -17,8 +17,12 @@ import { generateAudio, estimateDurationSeconds, withIntroStinger } from "../src
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import { notifyFailure } from "../src/lib/alerts";
 import { NYSE_HOLIDAYS } from "../src/config/nyse-holidays";
-import { getEstNow, getEstDateISO, isWeekend } from "../src/lib/market-calendar";
+import { getEstNow, getEstDateISO, isWeekend, isAtOrAfterEstTime } from "../src/lib/market-calendar";
 import type { Episode } from "../src/types/episode";
+
+// Must match the intended ET fire time in .github/workflows/daily-podcast.yml.
+const PUBLISH_HOUR = 16;
+const PUBLISH_MINUTE = 45; // 4:45 PM ET
 
 // Returns the most recent trading day (Mon–Fri).
 // Weekend runs (Sat/Sun) reference Friday's session so the script doesn't
@@ -51,7 +55,20 @@ async function main() {
     process.exit(0);
   }
 
-  // Skip if today's episode already exists and is ready (handles DST double-trigger)
+  // The dual-cron DST trick in daily-podcast.yml fires this script twice a
+  // day, an hour apart; only one lands on 4:45 PM ET each season, and the
+  // other lands an hour *early* in the off-season, not late. Reject that
+  // early firing outright — otherwise it generates with stale, pre-close
+  // data and "wins" the race, leaving the correctly-timed firing to find an
+  // episode already exists and skip. This check must come before the
+  // "already exists" skip below, since the early firing runs first.
+  if (!isAtOrAfterEstTime(PUBLISH_HOUR, PUBLISH_MINUTE)) {
+    console.log(`[generate] Before ${PUBLISH_HOUR}:${PUBLISH_MINUTE} ET — this is the DST-shifted duplicate trigger, not the real one. Skipping.`);
+    process.exit(0);
+  }
+
+  // Skip if today's episode already exists and is ready (covers the *other*
+  // season's duplicate trigger, which lands an hour late instead of early)
   const listPath = path.join(process.cwd(), "public", "data", "episodes.json");
   try {
     const existing = JSON.parse(await fs.readFile(listPath, "utf-8")) as Episode[];

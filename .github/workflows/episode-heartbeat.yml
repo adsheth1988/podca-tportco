@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      issues: write # needed to open a failure-alert issue if no episode is found
+      contents: read  # needed for actions/checkout — a `permissions:` block resets every unlisted scope to none
+      issues: write   # needed to open a failure-alert issue if no episode is found
 
     steps:
       - name: Checkout repo

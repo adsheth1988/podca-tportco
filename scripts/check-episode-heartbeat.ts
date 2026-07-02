@@ -15,14 +15,28 @@
 import path from "path";
 import fs from "fs/promises";
 import { notifyFailure } from "../src/lib/alerts";
-import { getEstDateISO, isTradingDay } from "../src/lib/market-calendar";
+import { getEstDateISO, isTradingDay, isAtOrAfterEstTime } from "../src/lib/market-calendar";
 import type { Episode } from "../src/types/episode";
+
+// Must match the intended ET fire time in .github/workflows/episode-heartbeat.yml.
+const CHECK_HOUR = 17;
+const CHECK_MINUTE = 30; // 5:30 PM ET
 
 async function main() {
   const id = getEstDateISO();
 
   if (!isTradingDay(id)) {
     console.log(`[heartbeat] ${id} is not a trading day — no episode expected, skipping.`);
+    return;
+  }
+
+  // Same dual-cron DST trick as the generation workflow, same failure mode:
+  // one of the two scheduled firings lands up to an hour early each season.
+  // Without this guard, that early firing would find no episode yet (since
+  // generation hasn't run at its correct time) and open a false-positive
+  // failure issue. Reject it here instead.
+  if (!isAtOrAfterEstTime(CHECK_HOUR, CHECK_MINUTE)) {
+    console.log(`[heartbeat] Before ${CHECK_HOUR}:${CHECK_MINUTE} ET — this is the DST-shifted duplicate trigger, not the real one. Skipping.`);
     return;
   }
 
