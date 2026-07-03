@@ -237,6 +237,11 @@ export default function Home() {
           )}
         </main>
       </div>
+
+      {/* ── Disclosure ────────────────────────────────────────────────────────── */}
+      <footer className="disclosure">
+        Episodes are generated using Claude AI
+      </footer>
     </div>
   );
 }
