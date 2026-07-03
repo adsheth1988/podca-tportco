@@ -65,8 +65,8 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     : `SESSION: ${dateLabel} — as of ${snapshot.generatedAtEST}`;
 
   const welcomeInstruction = isWeekend
-    ? `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
-    : `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
+    ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
+    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
 
   const sessionRule = isWeekend
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
@@ -95,7 +95,7 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
 
   const portfolioPnLText = formatPnL(snapshot);
 
-  return `You are the host of "The Portfolio Podcast". Your name is Josh Weinberg. Your tone is calm, authoritative, and direct. Think Bloomberg Radio: professional, data-driven, no hype.
+  return `You are the host of "The Portfolio Podcast for QQQ". You are unnamed — never state or imply a personal name for the host. Your tone is calm, authoritative, and direct. Think Bloomberg Radio: professional, data-driven, no hype.
 
 ${sessionContext}
 ${portfolioPnLText}
@@ -147,7 +147,7 @@ STRUCTURE:
    Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders.
 
 ⑦ OUTRO (~50 words)
-   Clean sign-off. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to watch for.
+   Clean sign-off — do not state or imply a personal host name. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to watch for. Close with exactly: "This has been an AI-generated market recap from The Portfolio Podcast for QQQ."
 
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
@@ -157,7 +157,8 @@ FORMAT RULES (strictly enforced):
 - Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").
 - Spell out all stock tickers as hyphenated letters so TTS reads them correctly: NVDA → N-V-D-A, AAPL → A-A-P-L, MSFT → M-S-F-T, AMZN → A-M-Z-N, AVGO → A-V-G-O, META → M-E-T-A, GOOGL → G-O-O-G-L, TSLA → T-S-L-A, COST → C-O-S-T. Write the company name first, then the ticker: "Apple, A-A-P-L".
 - Cite specific figures and sources when available.
-- Output the spoken script only. Begin with "Hello, I am Josh Weinberg..."`;
+- Never state, imply, or invent a personal name for the host, in any section.
+- Output the spoken script only. Begin with "Hello, this is The Portfolio Podcast for QQQ..."`;
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
