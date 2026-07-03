@@ -72,8 +72,11 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
     : `Always reference this session as "${dayName}'s session" or "as of ${snapshot.generatedAtEST} on ${dayName}." NEVER say "today."`;
 
+  const primaryFocusHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus !== false);
+  const secondaryHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus === false);
+
   const portfolioLines = PORTFOLIO_BY_WEIGHT
-    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio`)
+    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio${h.isPrimaryFocus === false ? " [secondary]" : ""}`)
     .join("\n");
 
   const priceTable = formatPriceTable(snapshot);
@@ -88,7 +91,12 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     .map(formatArticle)
     .join("\n\n");
 
-  const noNewsHoldings = PORTFOLIO_BY_WEIGHT
+  const noNewsPrimaryHoldings = primaryFocusHoldings
+    .filter(h => !news.portfolioArticles.some(a => a.ticker === h.ticker))
+    .map(h => h.ticker)
+    .join(", ");
+
+  const noNewsAllHoldings = PORTFOLIO_BY_WEIGHT
     .filter(h => !news.portfolioArticles.some(a => a.ticker === h.ticker))
     .map(h => h.ticker)
     .join(", ");
@@ -107,7 +115,8 @@ ${dayName.toUpperCase()} PRICE MOVES (mandatory — use exact figures for every 
   TICKER  CLOSE PRICE   $ CHANGE   % CHANGE
 ${priceTable}
 
-HOLDINGS WITH NO NEWS: ${noNewsHoldings || "none"}
+PRIMARY HOLDINGS WITH NO NEWS: ${noNewsPrimaryHoldings || "none"}
+SECONDARY HOLDINGS AVAILABLE: ${secondaryHoldings.map(h => h.ticker).join(", ")}
 
 TICKER-SPECIFIC NEWS (ranked by relevance):
 ${tickerNewsText || "No ticker-specific news found."}
@@ -136,11 +145,12 @@ STRUCTURE:
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQM. This should feel like a proper news segment.
 
 ⑤ HOLDINGS RUNDOWN (~1,000 words)
-   Cover ALL 9 remaining holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
-   MANDATORY FOR EVERY HOLDING — open with the session price move using exact figures from the price table above:
+   Cover the 9 primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
+   MANDATORY FOR EVERY PRIMARY HOLDING — open with the session price move using exact figures from the price table above:
      Example: "Apple closed at one hundred eighty-five dollars and twenty cents, down one point four two percent on the session."
    Then: news context (if any) → analyst commentary → what to watch next.
-   For holdings with no news: still state the price move, then give one sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
+   For primary holdings with no news: still state the price move, then give one sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
+   If any primary holding has no news, you may substitute it with a secondary holding (AVGO, META, WMT, AMAT, LRCX, CSCO, COST, KLAC, NFLX, SNDK) that has material news, but prioritize covering the primary 9.
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~100 words)
