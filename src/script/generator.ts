@@ -147,7 +147,7 @@ STRUCTURE:
    Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders.
 
 ⑦ OUTRO (~50 words)
-   Clean sign-off — do not state or imply a personal host name. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to watch for. Close with exactly: "This has been an AI-generated market recap from The Portfolio Podcast for QQQ."
+   Clean sign-off — do not state or imply a personal host name. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to watch for.
 
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
