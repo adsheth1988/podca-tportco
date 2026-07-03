@@ -11,6 +11,11 @@ on:
     - cron: "45 20 * * 1-5"  # 4:45 PM EDT (summer, UTC-4)
     - cron: "45 21 * * 1-5"  # 4:45 PM EST (winter, UTC-5)
   workflow_dispatch: # Manual trigger from GitHub UI
+    inputs:
+      force:
+        description: "Bypass the NYSE holiday check (for manual testing)"
+        type: boolean
+        default: false
 
 jobs:
   generate:
@@ -43,6 +48,7 @@ jobs:
           THENEWSAPI_KEY: ${{ secrets.THENEWSAPI_KEY }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # used to open a failure-alert issue on error
+          FORCE_GENERATE: ${{ github.event.inputs.force }}
         run: npx tsx scripts/generate-episode.ts
 
       - name: Get episode date (ET)

@@ -48,21 +48,26 @@ async function main() {
   const id = getEstDateISO();
   const repo = process.env.GITHUB_REPOSITORY ?? "adsheth1988/podcastportco";
   const audioUrl = `https://github.com/${repo}/releases/download/episode-${id}/${id}.mp3`;
+  const forceGenerate = process.env.FORCE_GENERATE === "true";
 
-  // Skip NYSE holidays — market closed, no data worth reporting
-  if (NYSE_HOLIDAYS.has(id)) {
-    console.log(`[generate] ${id} is a NYSE holiday — no episode today.`);
+  // Skip NYSE holidays — market closed, no data worth reporting.
+  // FORCE_GENERATE (workflow_dispatch's "force" input) bypasses this for
+  // one-off manual testing.
+  if (NYSE_HOLIDAYS.has(id) && !forceGenerate) {
+    console.log(`[generate] ${id} is a NYSE holiday — no episode today. (Pass force: true on a manual run to override.)`);
     process.exit(0);
   }
 
-  // The dual-cron DST trick in daily-podcast.yml fires this script twice a
-  // day, an hour apart; only one lands on 4:45 PM ET each season, and the
-  // other lands an hour *early* in the off-season, not late. Reject that
-  // early firing outright — otherwise it generates with stale, pre-close
-  // data and "wins" the race, leaving the correctly-timed firing to find an
-  // episode already exists and skip. This check must come before the
-  // "already exists" skip below, since the early firing runs first.
-  if (!isAtOrAfterEstTime(PUBLISH_HOUR, PUBLISH_MINUTE)) {
+  // The dual-cron DST trick in daily-podcast.yml only applies to *scheduled*
+  // firings — one lands on 4:45 PM ET each season, the other lands an hour
+  // early in the off-season. Reject that early firing outright, otherwise it
+  // generates with stale, pre-close data and "wins" the race, leaving the
+  // correctly-timed firing to find an episode already exists and skip.
+  // A manual workflow_dispatch run is unambiguous by nature — there's no
+  // "duplicate" trigger to guard against — so this only applies when
+  // GitHub Actions reports the run as schedule-triggered.
+  const isScheduledRun = process.env.GITHUB_EVENT_NAME === "schedule";
+  if (isScheduledRun && !isAtOrAfterEstTime(PUBLISH_HOUR, PUBLISH_MINUTE)) {
     console.log(`[generate] Before ${PUBLISH_HOUR}:${PUBLISH_MINUTE} ET — this is the DST-shifted duplicate trigger, not the real one. Skipping.`);
     process.exit(0);
   }
