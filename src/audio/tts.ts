@@ -6,7 +6,7 @@
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const MODEL  = "tts-1-hd";
 const VOICE  = "onyx";
-const SPEED  = 1.1;
+const SPEED  = 1.05;
 const MAX_CHARS = 4_000; // OpenAI hard limit is 4,096; leave headroom
 
 function requireApiKey(): string {
@@ -74,6 +74,6 @@ export async function generateAudio(script: string): Promise<Buffer> {
   return Buffer.concat(buffers);
 }
 
-export function estimateDurationSeconds(wordCount: number, wpm = 188): number {
+export function estimateDurationSeconds(wordCount: number, wpm = 179): number {
   return Math.round((wordCount / wpm) * 60);
 }
