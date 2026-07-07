@@ -59,21 +59,24 @@ function formatPriceTable(snapshot: PortfolioSnapshot): string {
 function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: PortfolioSnapshot, isWeekend: boolean): string {
   const dayName = dateLabel.split(",")[0]; // e.g. "Friday"
 
-  // Weekday: name the day + exact pull time. Weekend: reference Friday's close only, no time.
+  // Weekday and weekend both reference the trading day only, no timestamp.
   const sessionContext = isWeekend
-    ? `SESSION: ${dateLabel} — as of market close (4:00 PM ET)`
-    : `SESSION: ${dateLabel} — as of ${snapshot.generatedAtEST}`;
+    ? `SESSION: ${dateLabel} — market close`
+    : `SESSION: ${dateLabel}`;
 
   const welcomeInstruction = isWeekend
-    ? `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
-    : `Open with exactly: "Hello, I am Josh Weinberg and this is The Portfolio Podcast. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
+    ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
+    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName} — here is your QQQM recap." Then state portfolio P&L.`;
 
   const sessionRule = isWeekend
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
-    : `Always reference this session as "${dayName}'s session" or "as of ${snapshot.generatedAtEST} on ${dayName}." NEVER say "today."`;
+    : `Always reference this session as "${dayName}'s session." NEVER say "today." NEVER state a specific time or "as of" timestamp.`;
+
+  const primaryFocusHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus !== false);
+  const secondaryHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus === false);
 
   const portfolioLines = PORTFOLIO_BY_WEIGHT
-    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio`)
+    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio${h.isPrimaryFocus === false ? " [secondary]" : ""}`)
     .join("\n");
 
   const priceTable = formatPriceTable(snapshot);
@@ -88,14 +91,19 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     .map(formatArticle)
     .join("\n\n");
 
-  const noNewsHoldings = PORTFOLIO_BY_WEIGHT
+  const noNewsPrimaryHoldings = primaryFocusHoldings
+    .filter(h => !news.portfolioArticles.some(a => a.ticker === h.ticker))
+    .map(h => h.ticker)
+    .join(", ");
+
+  const noNewsAllHoldings = PORTFOLIO_BY_WEIGHT
     .filter(h => !news.portfolioArticles.some(a => a.ticker === h.ticker))
     .map(h => h.ticker)
     .join(", ");
 
   const portfolioPnLText = formatPnL(snapshot);
 
-  return `You are the host of "The Portfolio Podcast". Your name is Josh Weinberg. Your tone is calm, authoritative, and direct. Think Bloomberg Radio: professional, data-driven, no hype.
+  return `You are the host of "The Portfolio Podcast for QQQ". You are unnamed — never state or imply a personal name for the host. Your tone is calm, authoritative, and direct. Think Bloomberg Radio: professional, data-driven, no hype.
 
 ${sessionContext}
 ${portfolioPnLText}
@@ -107,7 +115,8 @@ ${dayName.toUpperCase()} PRICE MOVES (mandatory — use exact figures for every 
   TICKER  CLOSE PRICE   $ CHANGE   % CHANGE
 ${priceTable}
 
-HOLDINGS WITH NO NEWS: ${noNewsHoldings || "none"}
+PRIMARY HOLDINGS WITH NO NEWS: ${noNewsPrimaryHoldings || "none"}
+SECONDARY HOLDINGS AVAILABLE: ${secondaryHoldings.map(h => h.ticker).join(", ")}
 
 TICKER-SPECIFIC NEWS (ranked by relevance):
 ${tickerNewsText || "No ticker-specific news found."}
@@ -136,18 +145,19 @@ STRUCTURE:
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQM. This should feel like a proper news segment.
 
 ⑤ HOLDINGS RUNDOWN (~1,000 words)
-   Cover ALL 9 remaining holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
-   MANDATORY FOR EVERY HOLDING — open with the session price move using exact figures from the price table above:
+   Cover the 9 primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
+   MANDATORY FOR EVERY PRIMARY HOLDING — open with the session price move using exact figures from the price table above:
      Example: "Apple closed at one hundred eighty-five dollars and twenty cents, down one point four two percent on the session."
    Then: news context (if any) → analyst commentary → what to watch next.
-   For holdings with no news: still state the price move, then give one sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
+   For primary holdings with no news: still state the price move, then give one sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
+   If any primary holding has no news, you may substitute it with a secondary holding (AVGO, META, WMT, AMAT, LRCX, CSCO, COST, KLAC, NFLX, SNDK) that has material news, but prioritize covering the primary 9.
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~100 words)
    Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders.
 
 ⑦ OUTRO (~50 words)
-   Clean sign-off. Remind the listener: next episode drops at 5 PM ET on the next trading day. One forward-looking sentence on what to watch for.
+   Close with exactly: "This is The Portfolio Podcast for QQQ. We will be back same time the next business day with tomorrow's news." Then add one forward-looking sentence on what to watch for.
 
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
@@ -155,9 +165,10 @@ FORMAT RULES (strictly enforced):
 - ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
 - Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").
-- Spell out all stock tickers as hyphenated letters so TTS reads them correctly: NVDA → N-V-D-A, AAPL → A-A-P-L, MSFT → M-S-F-T, AMZN → A-M-Z-N, AVGO → A-V-G-O, META → M-E-T-A, GOOGL → G-O-O-G-L, TSLA → T-S-L-A, COST → C-O-S-T. Write the company name first, then the ticker: "Apple, A-A-P-L".
+- Never state ticker symbols. Refer to every company by its full name only (e.g. "Apple", "Microsoft", "Alphabet") — never "AAPL," "A-A-P-L," or any other ticker form.
 - Cite specific figures and sources when available.
-- Output the spoken script only. Begin with "Hello, I am Josh Weinberg..."`;
+- Never state, imply, or invent a personal name for the host, in any section.
+- Output the spoken script only. Begin with "Hello, this is The Portfolio Podcast for QQQ..."`;
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────

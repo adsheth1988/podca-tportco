@@ -38,7 +38,7 @@ body {
 
 .app-shell {
   display: grid;
-  grid-template-rows: 44px 38px 1fr;
+  grid-template-rows: 44px 38px 1fr auto;
   height: 100vh;
   overflow: hidden;
 }
@@ -601,3 +601,15 @@ body {
 
 .empty-state p { font-size: 0.82rem; }
 .empty-sub     { font-size: 0.75rem; color: var(--text-dim); }
+
+/* ── Disclosure ────────────────────────────────────────────────────────── */
+
+.disclosure {
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+  text-align: center;
+  width: 100%;
+}
