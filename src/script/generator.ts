@@ -59,18 +59,18 @@ function formatPriceTable(snapshot: PortfolioSnapshot): string {
 function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: PortfolioSnapshot, isWeekend: boolean): string {
   const dayName = dateLabel.split(",")[0]; // e.g. "Friday"
 
-  // Weekday: name the day + exact pull time. Weekend: reference Friday's close only, no time.
+  // Weekday and weekend both reference the trading day only, no timestamp.
   const sessionContext = isWeekend
-    ? `SESSION: ${dateLabel} — as of market close (4:00 PM ET)`
-    : `SESSION: ${dateLabel} — as of ${snapshot.generatedAtEST}`;
+    ? `SESSION: ${dateLabel} — market close`
+    : `SESSION: ${dateLabel}`;
 
   const welcomeInstruction = isWeekend
     ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
-    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}, as of ${snapshot.generatedAtEST} — here is your QQQM recap." Then state portfolio P&L.`;
+    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName} — here is your QQQM recap." Then state portfolio P&L.`;
 
   const sessionRule = isWeekend
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
-    : `Always reference this session as "${dayName}'s session" or "as of ${snapshot.generatedAtEST} on ${dayName}." NEVER say "today."`;
+    : `Always reference this session as "${dayName}'s session." NEVER say "today." NEVER state a specific time or "as of" timestamp.`;
 
   const primaryFocusHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus !== false);
   const secondaryHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus === false);
@@ -165,7 +165,7 @@ FORMAT RULES (strictly enforced):
 - ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
 - Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").
-- Spell out all stock tickers as hyphenated letters so TTS reads them correctly: NVDA → N-V-D-A, AAPL → A-A-P-L, MSFT → M-S-F-T, AMZN → A-M-Z-N, AVGO → A-V-G-O, META → M-E-T-A, GOOGL → G-O-O-G-L, TSLA → T-S-L-A, COST → C-O-S-T. Write the company name first, then the ticker: "Apple, A-A-P-L".
+- Never state ticker symbols. Refer to every company by its full name only (e.g. "Apple", "Microsoft", "Alphabet") — never "AAPL," "A-A-P-L," or any other ticker form.
 - Cite specific figures and sources when available.
 - Never state, imply, or invent a personal name for the host, in any section.
 - Output the spoken script only. Begin with "Hello, this is The Portfolio Podcast for QQQ..."`;
