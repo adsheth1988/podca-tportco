@@ -1,5 +1,18 @@
 [
   {
+    "id": "2026-07-07",
+    "date": "2026-07-07",
+    "status": "ready",
+    "script": null,
+    "audioUrl": "https://github.com/adsheth1988/podca-tportco/releases/download/episode-2026-07-07/2026-07-07.mp3",
+    "durationSeconds": 593,
+    "wordCount": 1600,
+    "articleCount": 32,
+    "generatedAt": "2026-07-07T08:58:26.128Z",
+    "errorMessage": null,
+    "createdAt": "2026-07-07T08:58:26.128Z"
+  },
+  {
     "id": "2026-07-04",
     "date": "2026-07-04",
     "status": "ready",
