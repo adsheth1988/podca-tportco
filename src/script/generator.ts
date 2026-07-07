@@ -65,8 +65,8 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     : `SESSION: ${dateLabel}`;
 
   const welcomeInstruction = isWeekend
-    ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQM recap." Then state portfolio P&L.`
-    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName} — here is your QQQM recap." Then state portfolio P&L.`;
+    ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQM recap." Then state exactly: "The QQQ portfolio closed [X]% [up/down] on the session." using the portfolio change percent — no dollar figures.`
+    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName} — here is your QQQM recap." Then state exactly: "The QQQ portfolio closed [X]% [up/down] on the session." using the portfolio change percent — no dollar figures.`;
 
   const sessionRule = isWeekend
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
@@ -164,6 +164,7 @@ FORMAT RULES (strictly enforced):
 - No financial advice. Report facts and analyst commentary. Never "you should buy/sell."
 - ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
+- The overall QQQ portfolio move (stated once, in the welcome) is percent-only — never state the portfolio's dollar P&L or total dollar value, anywhere in the script.
 - Spell out all numbers as words when spoken (e.g. "one point four two percent", "two hundred eighty-three dollars and seventy-eight cents").
 - Never state ticker symbols. Refer to every company by its full name only (e.g. "Apple", "Microsoft", "Alphabet") — never "AAPL," "A-A-P-L," or any other ticker form.
 - Cite specific figures and sources when available.
