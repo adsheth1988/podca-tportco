@@ -11,8 +11,8 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 // Switch to claude-haiku-4-5 if cost becomes a concern after validating.
 const MODEL = "claude-sonnet-4-6";
 
-// 1,700 words ÷ 170 WPM = 10 minutes
-const TARGET_WORD_COUNT = 1_700;
+// 1,250 words ÷ 179 WPM (current TTS speed) ≈ 7 minutes
+const TARGET_WORD_COUNT = 1_250;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -130,33 +130,33 @@ Target: exactly ${TARGET_WORD_COUNT} words total.
 
 STRUCTURE:
 
-① WELCOME & DATE (~60 words)
+① WELCOME & DATE (~50 words)
    ${welcomeInstruction}
    Keep it factual and punchy.
 
-② COLD OPEN (~50 words)
+② COLD OPEN (~40 words)
    Drop straight into the single most important story of the session — no additional introduction.
    Hook the listener immediately. End on a hard factual statement that creates tension.
 
-③ MARKET SNAPSHOT (~100 words)
-   Three sentences maximum on macro context: what drove the broad market in the session, any sector rotation, and one relevant macro data point (Fed, rates, jobs, etc.) if available. Include at least one index-level number (e.g. Nasdaq or S&P 500 % move). Crisp and factual.
+③ MARKET SNAPSHOT (~80 words)
+   Two sentences maximum on macro context: what drove the broad market in the session, and one relevant macro data point (Fed, rates, jobs, etc.) if available. Include at least one index-level number (e.g. Nasdaq or S&P 500 % move). Crisp and factual.
 
-④ TOP STORY (~200 words)
+④ TOP STORY (~160 words)
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQM. This should feel like a proper news segment.
 
-⑤ HOLDINGS RUNDOWN (~1,000 words)
+⑤ HOLDINGS RUNDOWN (~800 words)
    Cover the 9 primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
    MANDATORY FOR EVERY PRIMARY HOLDING — open with the session price move using exact figures from the price table above:
      Example: "Apple closed at one hundred eighty-five dollars and twenty cents, down one point four two percent on the session."
-   Then: news context (if any) → analyst commentary → what to watch next.
-   For primary holdings with no news: still state the price move, then give one sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
+   Then: one sentence of news context or analyst commentary (if any) → what to watch next.
+   For primary holdings with no news: still state the price move, then give one brief sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
    If any primary holding has no news, you may substitute it with a secondary holding (AVGO, META, WMT, AMAT, LRCX, CSCO, COST, KLAC, NFLX, SNDK) that has material news, but prioritize covering the primary 9.
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
-⑥ NUMBERS TO WATCH (~100 words)
-   Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders.
+⑥ NUMBERS TO WATCH (~80 words)
+   Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders, briefly.
 
-⑦ OUTRO (~50 words)
+⑦ OUTRO (~40 words)
    Close with exactly: "This is The Portfolio Podcast for QQQ. We will be back same time the next business day with tomorrow's news." Then add one forward-looking sentence on what to watch for.
 
 FORMAT RULES (strictly enforced):
