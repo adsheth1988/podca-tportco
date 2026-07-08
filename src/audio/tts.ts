@@ -1,12 +1,18 @@
 // OpenAI Text-to-Speech
-// Model: tts-1-hd — highest quality, ~$30/1M chars (~$0.03/episode at 10k chars)
+// Model: gpt-4o-mini-tts — ~$0.015/min generated audio. Unlike tts-1-hd, supports
+// the "instructions" field for controlling delivery style (tts-1-hd ignores it).
 // Voice: onyx — deep, authoritative, broadcast-quality male voice
 // No SSML needed — pauses driven by punctuation in the script
 
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
-const MODEL  = "tts-1-hd";
+const MODEL  = "gpt-4o-mini-tts";
 const VOICE  = "onyx";
-const SPEED  = 1.1;
+const SPEED  = 1.05;
+const INSTRUCTIONS =
+  "Deliver this like an experienced financial radio broadcaster — confident, " +
+  "engaged, and alert, never flat or robotic. Vary your pacing and emphasis " +
+  "naturally: lean into surprising numbers and turning points in the story, " +
+  "ease off on routine transitions. Sound like you find this genuinely interesting.";
 const MAX_CHARS = 4_000; // OpenAI hard limit is 4,096; leave headroom
 
 function requireApiKey(): string {
@@ -44,6 +50,7 @@ async function synthesizeChunk(text: string, apiKey: string): Promise<Buffer> {
       model:           MODEL,
       voice:           VOICE,
       input:           text,
+      instructions:    INSTRUCTIONS,
       speed:           SPEED,
       response_format: "mp3",
     }),
@@ -74,6 +81,6 @@ export async function generateAudio(script: string): Promise<Buffer> {
   return Buffer.concat(buffers);
 }
 
-export function estimateDurationSeconds(wordCount: number, wpm = 188): number {
+export function estimateDurationSeconds(wordCount: number, wpm = 179): number {
   return Math.round((wordCount / wpm) * 60);
 }
