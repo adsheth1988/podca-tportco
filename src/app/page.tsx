@@ -213,7 +213,7 @@ export default function Home() {
             <div className="empty-state">
               <div className="empty-icon">📻</div>
               <h2>No episode loaded</h2>
-              <p>Episodes are generated daily at 5 PM ET on weekdays.</p>
+              <p>Episodes are generated daily at 4:45 PM ET on weekdays.</p>
               {episodes.length === 0 && (
                 <p className="empty-sub">Check back after the next market close.</p>
               )}
@@ -238,9 +238,10 @@ export default function Home() {
         </main>
       </div>
 
-      {/* ── Disclosure ────────────────────────────────────────────────────────── */}
-      <footer className="disclosure">
-        Episodes are generated using Claude AI
+      {/* ── Disclosure Footer ────────────────────────────────────────────── */}
+      <footer className="disclosure-footer">
+        The host voice is AI-generated, not a real person. Every episode is
+        written and narrated by AI — this is not financial advice.
       </footer>
     </div>
   );

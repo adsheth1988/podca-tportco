@@ -162,6 +162,7 @@ STRUCTURE:
 FORMAT RULES (strictly enforced):
 - Write for ears only. No bullet points, headers, markdown, or section labels in the output.
 - No financial advice. Report facts and analyst commentary. Never "you should buy/sell."
+- Stay energetic and peppy through every section, not just the open — this applies to the Holdings Rundown too, even for quiet, no-news holdings. Energy in delivery is not the same as hype in claims: stay upbeat and accurate, never exaggerate outcomes or imply advice.
 - ${sessionRule}
 - Every holding in section ⑤ MUST open with its closing price and session % move — no exceptions, even for quiet sessions.
 - The overall QQQ portfolio move (stated once, in the welcome) is percent-only — never state the portfolio's dollar P&L or total dollar value, anywhere in the script.
