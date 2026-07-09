@@ -150,7 +150,7 @@ STRUCTURE:
      Example: "Apple closed at one hundred eighty-five dollars and twenty cents, down one point four two percent on the session."
    Then: one sentence of news context or analyst commentary (if any) → what to watch next.
    For primary holdings with no news: still state the price move, then give one brief sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
-   If any primary holding has no news, you may substitute it with a secondary holding (AVGO, META, WMT, AMAT, LRCX, CSCO, COST, KLAC, NFLX, SNDK) that has material news, but prioritize covering the primary 9.
+   If any primary holding has no news, you may substitute it with a secondary holding (${secondaryHoldings.map(h => h.ticker).join(", ")}) that has material news, but prioritize covering the primary 9.
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~80 words)

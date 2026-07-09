@@ -1,7 +1,9 @@
-// QQQ Nasdaq-100 top 19 holdings — single source of truth for the portfolio.
+// QQQ Nasdaq-100 top 20 holdings — single source of truth for the portfolio.
 // Weights sourced from Invesco fact sheet (late June 2026). Update quarterly.
-// Top 9 are primary podcast focus; 10-19 are fallback news sources.
+// Top 9 are primary podcast focus; 10-20 are fallback news sources.
 // Note: GOOGL and GOOG (same company, different share classes) combined into GOOGL position.
+// SpaceX (SPCX) joined the Nasdaq-100 on 2026-07-07 via fast-track inclusion;
+// weight is a working estimate (JPMorgan ~1.3%) pending confirmed float-adjusted figure.
 
 export interface Holding {
   ticker: string;
@@ -31,6 +33,7 @@ export const PORTFOLIO_HOLDINGS: Holding[] = [
   { ticker: "KLAC",  name: "KLA Corporation",               weight:  1.46, sector: "Technology", isPrimaryFocus: false },
   { ticker: "NFLX",  name: "Netflix, Inc.",                 weight:  1.40, sector: "Communication Services", isPrimaryFocus: false },
   { ticker: "SNDK",  name: "Sandisk Corporation",           weight:  1.39, sector: "Technology", isPrimaryFocus: false },
+  { ticker: "SPCX",  name: "SpaceX (Space Exploration Technologies Corp.)", weight: 1.30, sector: "Industrials", isPrimaryFocus: false },
 ];
 
 // Sorted by weight descending — news prioritization uses this order
