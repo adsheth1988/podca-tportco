@@ -23,11 +23,10 @@ function getEstDateLabel(): string {
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
+  // No secret configured (or still on the placeholder) — open, dev-only.
   if (!secret || secret === "change-me-to-a-random-string") return true;
+  // Secret is configured — every request must present it, no exceptions.
   const authHeader = req.headers.get("authorization");
-  // No header = browser request, always allow
-  if (!authHeader) return true;
-  // Header present (e.g. cron job) = must match secret
   return authHeader === `Bearer ${secret}`;
 }
 
