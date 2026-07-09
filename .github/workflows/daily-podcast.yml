@@ -64,7 +64,7 @@ jobs:
 
           gh release create "$TAG" \
             --title "Episode ${DATE}" \
-            --notes "QQQM Daily Podcast — ${DATE}" \
+            --notes "QQQ Daily Podcast — ${DATE}" \
             --latest=false
 
           gh release upload "$TAG" "$MP3" --clobber

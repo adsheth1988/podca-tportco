@@ -65,8 +65,8 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     : `SESSION: ${dateLabel}`;
 
   const welcomeInstruction = isWeekend
-    ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQM recap." Then state exactly: "The QQQ portfolio closed [X]% [up/down] on the session." using the portfolio change percent — no dollar figures.`
-    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName} — here is your QQQM recap." Then state exactly: "The QQQ portfolio closed [X]% [up/down] on the session." using the portfolio change percent — no dollar figures.`;
+    ? `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName}'s market close — here is your QQQ recap." Then state exactly: "The QQQ portfolio closed [X]% [up/down] on the session." using the portfolio change percent — no dollar figures.`
+    : `Open with exactly: "Hello, this is The Portfolio Podcast for QQQ. ${dayName} — here is your QQQ recap." Then state exactly: "The QQQ portfolio closed [X]% [up/down] on the session." using the portfolio change percent — no dollar figures.`;
 
   const sessionRule = isWeekend
     ? `Always reference this session as "${dayName}'s close" or "at ${dayName}'s market close." NEVER say "today," "this weekend," "Saturday," or "Sunday."`
@@ -108,7 +108,7 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
 ${sessionContext}
 ${portfolioPnLText}
 
-QQQM TOP 10 HOLDINGS (listed largest to smallest — prioritize coverage by weight):
+QQQ TOP 10 HOLDINGS (listed largest to smallest — prioritize coverage by weight):
 ${portfolioLines}
 
 ${dayName.toUpperCase()} PRICE MOVES (mandatory — use exact figures for every holding):
@@ -142,7 +142,7 @@ STRUCTURE:
    Two sentences maximum on macro context: what drove the broad market in the session, and one relevant macro data point (Fed, rates, jobs, etc.) if available. Include at least one index-level number (e.g. Nasdaq or S&P 500 % move). Crisp and factual.
 
 ④ TOP STORY (~160 words)
-   The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQM. This should feel like a proper news segment.
+   The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQ. This should feel like a proper news segment.
 
 ⑤ HOLDINGS RUNDOWN (~800 words)
    Cover the 9 primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
@@ -154,7 +154,7 @@ STRUCTURE:
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~80 words)
-   Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQM holders, briefly.
+   Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for QQQ holders, briefly.
 
 ⑦ OUTRO (~40 words)
    Close with exactly: "This is The Portfolio Podcast for QQQ. We will be back same time the next business day with tomorrow's news." Then add one forward-looking sentence on what to watch for.

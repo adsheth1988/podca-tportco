@@ -12,8 +12,8 @@ interface Props {
 export default function EpisodeCard({ episode, isActive, onClick }: Props) {
   const dateLabel = format(parseISO(episode.date), "MMM d, yyyy");
 
-  const title = `QQQM Daily — ${dateLabel}`;
-  const meta = episode.articleCount != null ? `${episode.articleCount} stories · QQQM Top 10` : "QQQM Top 10";
+  const title = `QQQ Daily — ${dateLabel}`;
+  const meta = episode.articleCount != null ? `${episode.articleCount} stories · QQQ Top 10` : "QQQ Top 10";
 
   return (
     <button
