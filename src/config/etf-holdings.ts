@@ -1,5 +1,10 @@
-// Top 10 holdings per ETF — update quarterly from fund fact sheets.
+// Top holdings per ETF — update quarterly from fund fact sheets.
 // Sources: SPDR (SPY), Invesco (QQQ), iShares (SOXX, IWM), Roundhill (MEME)
+// QQQ holdings are derived from config/portfolio.ts (the podcast's own source
+// of truth) rather than duplicated here, so the sidebar can't drift out of
+// sync with what the podcast actually covers.
+
+import { PORTFOLIO_BY_WEIGHT } from "./portfolio";
 
 export interface ETFHolding {
   ticker: string;
@@ -29,17 +34,11 @@ export const ETF_HOLDINGS: Record<string, ETFInfo> = {
   },
   QQQ: {
     fullName: "Invesco QQQ Trust",
-    holdings: [
-      { ticker: "AAPL",  name: "Apple Inc.",            weight: 8.97 },
-      { ticker: "MSFT",  name: "Microsoft Corp.",       weight: 8.42 },
-      { ticker: "NVDA",  name: "NVIDIA Corp.",          weight: 8.15 },
-      { ticker: "AMZN",  name: "Amazon.com Inc.",       weight: 5.52 },
-      { ticker: "AVGO",  name: "Broadcom Inc.",         weight: 4.61 },
-      { ticker: "META",  name: "Meta Platforms",        weight: 4.48 },
-      { ticker: "GOOGL", name: "Alphabet (Google)",      weight: 8.01 },
-      { ticker: "TSLA",  name: "Tesla Inc.",            weight: 3.54 },
-      { ticker: "COST",  name: "Costco Wholesale",      weight: 2.81 },
-    ],
+    holdings: PORTFOLIO_BY_WEIGHT.slice(0, 10).map(h => ({
+      ticker: h.ticker,
+      name:   h.name,
+      weight: h.weight,
+    })),
   },
   SOXX: {
     fullName: "iShares Semiconductor ETF",

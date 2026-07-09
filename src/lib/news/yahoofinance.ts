@@ -1,5 +1,8 @@
 import type { NewsItem } from "@/types/news";
 import { PORTFOLIO_MAP } from "@/config/portfolio";
+import { mapWithConcurrency } from "@/lib/concurrency";
+
+const RSS_CONCURRENCY = 6;
 
 const RSS_BASE = "https://feeds.finance.yahoo.com/rss/2.0/headline";
 
@@ -61,9 +64,12 @@ async function fetchTickerRss(ticker: string): Promise<NewsItem[]> {
   }));
 }
 
-// Fetch RSS feeds for all tickers in parallel with a concurrency limit
+// Fetch RSS feeds for all tickers with a real concurrency limit — Yahoo's RSS
+// endpoint is unauthenticated and undocumented, so firing all requests at
+// once (esp. now that the tracked portfolio has grown to 20 tickers) risks
+// throttling.
 export async function fetchYahooFinanceNews(tickers: string[]): Promise<NewsItem[]> {
-  const results = await Promise.allSettled(tickers.map((t) => fetchTickerRss(t)));
+  const results = await mapWithConcurrency(tickers, RSS_CONCURRENCY, fetchTickerRss);
   const articles: NewsItem[] = [];
 
   for (let i = 0; i < results.length; i++) {

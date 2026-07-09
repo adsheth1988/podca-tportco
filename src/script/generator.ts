@@ -1,4 +1,5 @@
 import { PORTFOLIO_BY_WEIGHT } from "@/config/portfolio";
+import { EFFECTIVE_WPM } from "@/audio/tts";
 import type { AggregatedNewsResult, NewsItem } from "@/types/news";
 import type { PortfolioSnapshot } from "@/lib/prices";
 
@@ -11,8 +12,10 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 // Switch to claude-haiku-4-5 if cost becomes a concern after validating.
 const MODEL = "claude-sonnet-4-6";
 
-// 1,250 words ÷ 179 WPM (current TTS speed) ≈ 7 minutes
-const TARGET_WORD_COUNT = 1_250;
+const TARGET_MINUTES = 7;
+// Derived from tts.ts's EFFECTIVE_WPM so this never drifts out of sync with
+// the actual TTS speed again.
+const TARGET_WORD_COUNT = Math.round(EFFECTIVE_WPM * TARGET_MINUTES);
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -74,9 +77,14 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
 
   const primaryFocusHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus !== false);
   const secondaryHoldings = PORTFOLIO_BY_WEIGHT.filter(h => h.isPrimaryFocus === false);
+  const hasNews = (ticker: string) => news.portfolioArticles.some(a => a.ticker === ticker);
 
-  const portfolioLines = PORTFOLIO_BY_WEIGHT
-    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio${h.isPrimaryFocus === false ? " [secondary]" : ""}`)
+  const portfolioLines = primaryFocusHoldings
+    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio`)
+    .join("\n");
+
+  const secondaryLines = secondaryHoldings
+    .map(h => `  ${h.ticker} (${h.name}, ${h.sector}) — ${h.weight}% of portfolio`)
     .join("\n");
 
   const priceTable = formatPriceTable(snapshot);
@@ -92,12 +100,14 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
     .join("\n\n");
 
   const noNewsPrimaryHoldings = primaryFocusHoldings
-    .filter(h => !news.portfolioArticles.some(a => a.ticker === h.ticker))
+    .filter(h => !hasNews(h.ticker))
     .map(h => h.ticker)
     .join(", ");
 
-  const noNewsAllHoldings = PORTFOLIO_BY_WEIGHT
-    .filter(h => !news.portfolioArticles.some(a => a.ticker === h.ticker))
+  // Only offer secondary holdings that actually have news as substitutes —
+  // an empty-news secondary ticker is not a useful fallback.
+  const secondaryWithNewsTickers = secondaryHoldings
+    .filter(h => hasNews(h.ticker))
     .map(h => h.ticker)
     .join(", ");
 
@@ -108,15 +118,18 @@ function buildPrompt(news: AggregatedNewsResult, dateLabel: string, snapshot: Po
 ${sessionContext}
 ${portfolioPnLText}
 
-QQQ TOP 10 HOLDINGS (listed largest to smallest — prioritize coverage by weight):
+QQQ PRIMARY HOLDINGS — ${primaryFocusHoldings.length} total, covered every episode (listed largest to smallest):
 ${portfolioLines}
 
-${dayName.toUpperCase()} PRICE MOVES (mandatory — use exact figures for every holding):
+QQQ SECONDARY HOLDINGS — ${secondaryHoldings.length} total, fallback news sources only, never covered directly unless substituted in below:
+${secondaryLines}
+
+${dayName.toUpperCase()} PRICE MOVES (mandatory — use exact figures for every primary holding):
   TICKER  CLOSE PRICE   $ CHANGE   % CHANGE
 ${priceTable}
 
 PRIMARY HOLDINGS WITH NO NEWS: ${noNewsPrimaryHoldings || "none"}
-SECONDARY HOLDINGS AVAILABLE: ${secondaryHoldings.map(h => h.ticker).join(", ")}
+SECONDARY HOLDINGS WITH NEWS (valid substitutes only): ${secondaryWithNewsTickers || "none"}
 
 TICKER-SPECIFIC NEWS (ranked by relevance):
 ${tickerNewsText || "No ticker-specific news found."}
@@ -145,12 +158,12 @@ STRUCTURE:
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in QQQ. This should feel like a proper news segment.
 
 ⑤ HOLDINGS RUNDOWN (~800 words)
-   Cover the 9 primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
+   Cover all ${primaryFocusHoldings.length} primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
    MANDATORY FOR EVERY PRIMARY HOLDING — open with the session price move using exact figures from the price table above:
      Example: "Apple closed at one hundred eighty-five dollars and twenty cents, down one point four two percent on the session."
    Then: one sentence of news context or analyst commentary (if any) → what to watch next.
    For primary holdings with no news: still state the price move, then give one brief sentence of context (sector trend, relative performance vs index, or upcoming catalyst).
-   If any primary holding has no news, you may substitute it with a secondary holding (${secondaryHoldings.map(h => h.ticker).join(", ")}) that has material news, but prioritize covering the primary 9.
+   If any primary holding has no news, you may substitute it with one of the SECONDARY HOLDINGS WITH NEWS listed above, but prioritize covering the primary ${primaryFocusHoldings.length}.
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
 ⑥ NUMBERS TO WATCH (~80 words)
