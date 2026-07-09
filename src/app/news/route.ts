@@ -3,6 +3,8 @@ import { aggregatePortfolioNews } from "@/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "@/script/generator";
 import { generateAudio, estimateDurationSeconds } from "@/audio/tts";
 import { fetchPortfolioSnapshot } from "@/lib/prices";
+import { PORTFOLIO_HOLDINGS } from "@/config/portfolio";
+import { QQQ_PODCAST } from "@/config/podcasts";
 
 export const dynamic    = "force-dynamic";
 export const runtime    = "nodejs";
@@ -57,7 +59,7 @@ export async function POST() {
     currentStep = "news_fetch";
     console.log("[generate] Step 1: Fetching portfolio news...");
 
-    const news = await aggregatePortfolioNews();
+    const news = await aggregatePortfolioNews(PORTFOLIO_HOLDINGS);
 
     if (news.totalArticles === 0 && news.errors.length > 0) {
       return NextResponse.json(
@@ -81,8 +83,10 @@ export async function POST() {
     console.log("[generate] Step 2: Generating script with Claude...");
 
     const dateLabel = getEstDateLabel();
-    const snapshot  = await fetchPortfolioSnapshot();
-    const script    = await generatePodcastScript(news, dateLabel, snapshot);
+    const snapshot  = await fetchPortfolioSnapshot(PORTFOLIO_HOLDINGS);
+    const script    = await generatePodcastScript(
+      news, dateLabel, snapshot, false, PORTFOLIO_HOLDINGS, QQQ_PODCAST
+    );
     const wordCount = countWords(script);
     const duration  = estimateDurationSeconds(wordCount);
 

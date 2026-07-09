@@ -5,10 +5,7 @@ import {
 } from "./marketaux";
 import { fetchMacroNews } from "./thenewsapi";
 import { fetchYahooFinanceNews } from "./yahoofinance";
-import {
-  PORTFOLIO_MAP,
-  ALL_TICKERS,
-} from "@/config/portfolio";
+import type { Holding } from "@/config/portfolio";
 import type {
   AggregatedNewsResult,
   NewsItem,
@@ -77,14 +74,15 @@ function getPublishedAfterTimestamp(): string {
 
 function mapMarketauxArticle(
   article: MarketauxArticle,
-  portfolioTickers: Set<string>
+  portfolioTickers: Set<string>,
+  holdingMap: Map<string, Holding>
 ): NewsItem | null {
   const matchingTickers = extractMatchingTickers(article, portfolioTickers);
   if (matchingTickers.length === 0) return null;
   if (isBlocked(article.source)) return null;
 
   const primaryTicker = matchingTickers[0];
-  const holding = PORTFOLIO_MAP.get(primaryTicker);
+  const holding = holdingMap.get(primaryTicker);
   const portfolioWeight = holding?.weight ?? 0;
   const sentimentScore = extractEntitySentiment(article, portfolioTickers);
 
@@ -126,15 +124,17 @@ function mapTheNewsArticle(article: TheNewsArticle): NewsItem | null {
 
 // ── Main aggregator ────────────────────────────────────────────────────────────
 
-export async function aggregatePortfolioNews(): Promise<AggregatedNewsResult> {
+export async function aggregatePortfolioNews(holdings: Holding[]): Promise<AggregatedNewsResult> {
   const errors: string[] = [];
-  const portfolioTickers = new Set(ALL_TICKERS);
+  const tickers = holdings.map((h) => h.ticker);
+  const portfolioTickers = new Set(tickers);
+  const holdingMap = new Map(holdings.map((h) => [h.ticker, h]));
   const publishedAfter = getPublishedAfterTimestamp();
 
   // Run all three sources in parallel
   const [marketauxResult, yahooResult, macroResult] = await Promise.allSettled([
-    fetchTickerNews({ tickers: ALL_TICKERS, publishedAfter, limit: 50 }),
-    fetchYahooFinanceNews(ALL_TICKERS),
+    fetchTickerNews({ tickers, publishedAfter, limit: 50 }),
+    fetchYahooFinanceNews(tickers, holdingMap),
     fetchMacroNews(8),
   ]);
 
@@ -142,7 +142,7 @@ export async function aggregatePortfolioNews(): Promise<AggregatedNewsResult> {
   let marketauxArticles: NewsItem[] = [];
   if (marketauxResult.status === "fulfilled") {
     marketauxArticles = marketauxResult.value
-      .map((a) => mapMarketauxArticle(a, portfolioTickers))
+      .map((a) => mapMarketauxArticle(a, portfolioTickers, holdingMap))
       .filter((item): item is NewsItem => item !== null);
   } else {
     const msg = `MarketAux fetch failed: ${marketauxResult.reason}`;

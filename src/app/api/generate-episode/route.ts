@@ -6,6 +6,8 @@ import { generatePodcastScript, countWords } from "@/script/generator";
 import { generateAudio, estimateDurationSeconds } from "@/audio/tts";
 import { fetchPortfolioSnapshot } from "@/lib/prices";
 import { saveEpisode, getEpisode } from "@/lib/storage";
+import { PORTFOLIO_HOLDINGS } from "@/config/portfolio";
+import { QQQ_PODCAST } from "@/config/podcasts";
 
 function getEstDateISO(): string {
   const estString = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
@@ -50,13 +52,15 @@ export async function POST(req: NextRequest) {
     // Step 1: Fetch news + prices in parallel
     console.log(`[generate-episode] Fetching news + prices for ${id}…`);
     const [news, snapshot] = await Promise.all([
-      aggregatePortfolioNews(),
-      fetchPortfolioSnapshot(),
+      aggregatePortfolioNews(PORTFOLIO_HOLDINGS),
+      fetchPortfolioSnapshot(PORTFOLIO_HOLDINGS),
     ]);
 
     // Step 2: Generate script
     console.log(`[generate-episode] Generating script with Claude…`);
-    const script = await generatePodcastScript(news, getEstDateLabel(), snapshot);
+    const script = await generatePodcastScript(
+      news, getEstDateLabel(), snapshot, false, PORTFOLIO_HOLDINGS, QQQ_PODCAST
+    );
     const wordCount = countWords(script);
 
     // Step 3: Synthesize audio
