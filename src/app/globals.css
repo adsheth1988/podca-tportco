@@ -613,3 +613,107 @@ body {
   text-align: center;
   width: 100%;
 }
+
+/* ── Waitlist Landing Page ─────────────────────────────────────────────── */
+
+.waitlist-shell {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.waitlist-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+}
+
+.waitlist-icon {
+  font-size: 2.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.waitlist-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.waitlist-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 1.75rem;
+}
+
+.waitlist-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.waitlist-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.waitlist-input:focus { border-color: var(--accent); }
+.waitlist-input::placeholder { color: var(--text-dim); }
+
+.waitlist-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.waitlist-btn:hover { opacity: 0.88; }
+
+.waitlist-error {
+  font-size: 0.78rem;
+  color: var(--red);
+  text-align: left;
+}
+
+.waitlist-success {
+  background: var(--green-dim);
+  color: var(--green);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.waitlist-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 1.75rem 0 1.25rem;
+}
+
+.waitlist-podcast-link {
+  display: inline-block;
+  color: var(--accent);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.waitlist-podcast-link:hover { text-decoration: underline; }
