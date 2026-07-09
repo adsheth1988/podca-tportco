@@ -1,5 +1,5 @@
 // Top 10 holdings per ETF — update quarterly from fund fact sheets.
-// Sources: SPDR (SPY), Invesco (QQQM), iShares (SOXX, IWM), Roundhill (MEME)
+// Sources: SPDR (SPY), Invesco (QQQ), iShares (SOXX, IWM), Roundhill (MEME)
 
 export interface ETFHolding {
   ticker: string;
@@ -27,8 +27,8 @@ export const ETF_HOLDINGS: Record<string, ETFInfo> = {
       { ticker: "BRK.B", name: "Berkshire Hathaway B",  weight: 1.65 },
     ],
   },
-  QQQM: {
-    fullName: "Invesco Nasdaq-100 ETF",
+  QQQ: {
+    fullName: "Invesco QQQ Trust",
     holdings: [
       { ticker: "AAPL",  name: "Apple Inc.",            weight: 8.97 },
       { ticker: "MSFT",  name: "Microsoft Corp.",       weight: 8.42 },

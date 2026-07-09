@@ -15,7 +15,7 @@ interface Quote {
 
 const ETF_NAMES: Record<string, string> = {
   SPY:  "S&P 500 ETF",
-  QQQM: "Nasdaq-100 ETF",
+  QQQ:  "Nasdaq-100 ETF",
   SOXX: "Semiconductor ETF",
   IWM:  "Russell 2000 ETF",
   MEME: "Roundhill Meme ETF",
@@ -56,7 +56,7 @@ export default function Home() {
   const [activeEpisode, setActiveEpisode] = useState<Episode | null>(null);
   const [quotes, setQuotes]               = useState<Quote[]>([]);
   const [marketOpen, setMarketOpen]       = useState(false);
-  const [selectedETF, setSelectedETF]     = useState<string>("QQQM");
+  const [selectedETF, setSelectedETF]     = useState<string>("QQQ");
   const clock = useETClock();
 
   const fetchEpisodes = useCallback(async () => {
@@ -108,7 +108,7 @@ export default function Home() {
           <span className="tb-icon">📻</span>
           <span className="tb-brand">Portfolio Podcast</span>
           <span className="tb-divider" />
-          <span className="tb-sub">QQQM Daily</span>
+          <span className="tb-sub">QQQ Daily</span>
         </div>
         <div className="top-bar-right">
           <span className={`market-badge ${marketOpen ? "market-badge--open" : "market-badge--closed"}`}>

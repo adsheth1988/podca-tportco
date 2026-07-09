@@ -80,8 +80,8 @@ export default function PodcastPlayer({ episode }: Props) {
       <div className="player-meta">
         <div className="player-icon">📈</div>
         <div>
-          <h2 className="player-title">QQQM Daily — {format(parseISO(episode.date), "MMMM d, yyyy")}</h2>
-          <p className="player-subtitle">QQQM Daily · Top 10 Holdings Recap</p>
+          <h2 className="player-title">QQQ Daily — {format(parseISO(episode.date), "MMMM d, yyyy")}</h2>
+          <p className="player-subtitle">QQQ Daily · Top 10 Holdings Recap</p>
         </div>
       </div>
 
@@ -126,7 +126,7 @@ export default function PodcastPlayer({ episode }: Props) {
           <a
             className="download-btn"
             href={episode.audioUrl}
-            download={`QQQM-Daily-${episode.date}.mp3`}
+            download={`QQQ-Daily-${episode.date}.mp3`}
           >
             ↓ Download MP3
           </a>

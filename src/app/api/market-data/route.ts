@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const WATCHLIST = ["SPY", "QQQM", "SOXX", "IWM", "MEME"];
+const WATCHLIST = ["SPY", "QQQ", "SOXX", "IWM", "MEME"];
 
 async function fetchQuote(ticker: string) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
