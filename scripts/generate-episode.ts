@@ -17,15 +17,14 @@ import { generateAudio, estimateDurationSeconds } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import { PORTFOLIO_HOLDINGS } from "../src/config/portfolio";
 import { QQQ_PODCAST } from "../src/config/podcasts";
+import { notifyFailure } from "../src/lib/alerts";
+import { NYSE_HOLIDAYS } from "../src/config/nyse-holidays";
+import { getEstNow, getEstDateISO, isWeekend, isAtOrAfterEstTime } from "../src/lib/market-calendar";
 import type { Episode } from "../src/types/episode";
 
-function getEstNow(): Date {
-  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
-}
-
-function getEstDateISO(): string {
-  return getEstNow().toISOString().slice(0, 10);
-}
+// Must match the intended ET fire time in .github/workflows/daily-podcast.yml.
+const PUBLISH_HOUR = 16;
+const PUBLISH_MINUTE = 45; // 4:45 PM ET
 
 // Returns the most recent trading day (Mon–Fri).
 // Weekend runs (Sat/Sun) reference Friday's session so the script doesn't
@@ -47,51 +46,36 @@ function getMarketDateLabel(): string {
   });
 }
 
-function isWeekendRun(): boolean {
-  const day = getEstNow().getDay();
-  return day === 0 || day === 6;
-}
-
-// NYSE market holidays — no trading, no episode.
-// Source: NYSE holiday schedule (https://www.nyse.com/markets/hours-calendars)
-// Update this list each January for the new year.
-const NYSE_HOLIDAYS = new Set([
-  // 2026
-  "2026-01-01", // New Year's Day
-  "2026-01-19", // Martin Luther King Jr. Day
-  "2026-02-16", // Presidents' Day
-  "2026-04-03", // Good Friday
-  "2026-05-25", // Memorial Day
-  "2026-06-19", // Juneteenth National Independence Day
-  "2026-07-03", // Independence Day (observed — July 4 falls on Saturday)
-  "2026-09-07", // Labor Day
-  "2026-11-26", // Thanksgiving Day
-  "2026-12-25", // Christmas Day
-  // 2027
-  "2027-01-01", // New Year's Day
-  "2027-01-18", // Martin Luther King Jr. Day
-  "2027-02-15", // Presidents' Day
-  "2027-04-23", // Good Friday
-  "2027-05-31", // Memorial Day
-  "2027-06-18", // Juneteenth (observed — June 19 falls on Saturday)
-  "2027-07-05", // Independence Day (observed — July 4 falls on Sunday)
-  "2027-09-06", // Labor Day
-  "2027-11-25", // Thanksgiving Day
-  "2027-12-24", // Christmas Day (observed — December 25 falls on Saturday)
-]);
-
 async function main() {
   const id = getEstDateISO();
   const repo = process.env.GITHUB_REPOSITORY ?? "adsheth1988/podcastportco";
   const audioUrl = `https://github.com/${repo}/releases/download/episode-${id}/${id}.mp3`;
+  const forceGenerate = process.env.FORCE_GENERATE === "true";
 
-  // Skip NYSE holidays — market closed, no data worth reporting
-  if (NYSE_HOLIDAYS.has(id)) {
-    console.log(`[generate] ${id} is a NYSE holiday — no episode today.`);
+  // Skip NYSE holidays — market closed, no data worth reporting.
+  // FORCE_GENERATE (workflow_dispatch's "force" input) bypasses this for
+  // one-off manual testing.
+  if (NYSE_HOLIDAYS.has(id) && !forceGenerate) {
+    console.log(`[generate] ${id} is a NYSE holiday — no episode today. (Pass force: true on a manual run to override.)`);
     process.exit(0);
   }
 
-  // Skip if today's episode already exists and is ready (handles DST double-trigger)
+  // The dual-cron DST trick in daily-podcast.yml only applies to *scheduled*
+  // firings — one lands on 4:45 PM ET each season, the other lands an hour
+  // early in the off-season. Reject that early firing outright, otherwise it
+  // generates with stale, pre-close data and "wins" the race, leaving the
+  // correctly-timed firing to find an episode already exists and skip.
+  // A manual workflow_dispatch run is unambiguous by nature — there's no
+  // "duplicate" trigger to guard against — so this only applies when
+  // GitHub Actions reports the run as schedule-triggered.
+  const isScheduledRun = process.env.GITHUB_EVENT_NAME === "schedule";
+  if (isScheduledRun && !isAtOrAfterEstTime(PUBLISH_HOUR, PUBLISH_MINUTE)) {
+    console.log(`[generate] Before ${PUBLISH_HOUR}:${PUBLISH_MINUTE} ET — this is the DST-shifted duplicate trigger, not the real one. Skipping.`);
+    process.exit(0);
+  }
+
+  // Skip if today's episode already exists and is ready (covers the *other*
+  // season's duplicate trigger, which lands an hour late instead of early)
   const listPath = path.join(process.cwd(), "public", "data", "episodes.json");
   try {
     const existing = JSON.parse(await fs.readFile(listPath, "utf-8")) as Episode[];
@@ -119,7 +103,7 @@ async function main() {
   // Step 2: Generate script with Claude
   console.log("[generate] Step 2: Generating script with Claude…");
   const script = await generatePodcastScript(
-    news, getMarketDateLabel(), snapshot, isWeekendRun(), PORTFOLIO_HOLDINGS, QQQ_PODCAST
+    news, getMarketDateLabel(), snapshot, isWeekend(), PORTFOLIO_HOLDINGS, QQQ_PODCAST
   );
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
@@ -177,7 +161,9 @@ async function main() {
   console.log(`[generate] Done! Audio will be at: ${audioUrl}`);
 }
 
-main().catch((err) => {
-  console.error("[generate] Fatal error:", err);
+main().catch(async (err) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error("[generate] Fatal error:", message);
+  await notifyFailure({ episodeId: getEstDateISO(), message });
   process.exit(1);
 });

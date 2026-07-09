@@ -1,0 +1,36 @@
+name: Episode Heartbeat Check
+
+on:
+  schedule:
+    # 5:30 PM ET weekdays — 45 min after the 4:45 PM generation cron, giving
+    # it time to run (15 min timeout) and commit before we check its output.
+    - cron: "30 21 * * 1-5"  # 5:30 PM EDT (summer, UTC-4)
+    - cron: "30 22 * * 1-5"  # 5:30 PM EST (winter, UTC-5)
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read  # needed for actions/checkout — a `permissions:` block resets every unlisted scope to none
+      issues: write   # needed to open a failure-alert issue if no episode is found
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check today's episode exists
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx tsx scripts/check-episode-heartbeat.ts
