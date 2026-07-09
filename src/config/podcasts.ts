@@ -3,7 +3,7 @@
 export interface PodcastIdentity {
   id: string;
   showName: string;            // e.g. "The Portfolio Podcast for QQQ"
-  recapLabel: string;          // e.g. "QQQM recap" — spoken right after showName
+  recapLabel: string;          // e.g. "QQQ recap" — spoken right after showName
   // Aggregate portfolio total dollar value/P&L stated in the welcome line.
   aggregateDollarAllowed: boolean;
   // Per-holding exact dollar price/value in the holdings rundown. A per-
@@ -15,7 +15,7 @@ export interface PodcastIdentity {
 export const QQQ_PODCAST: PodcastIdentity = {
   id: "qqq",
   showName: "The Portfolio Podcast for QQQ",
-  recapLabel: "QQQM recap",
+  recapLabel: "QQQ recap",
   aggregateDollarAllowed: false,
   perHoldingDollarAllowed: true,
 };
