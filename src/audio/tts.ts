@@ -1,13 +1,25 @@
 // OpenAI Text-to-Speech
 // Model: gpt-4o-mini-tts — ~$0.015/min generated audio. Unlike tts-1-hd, supports
 // the "instructions" field for controlling delivery style (tts-1-hd ignores it).
+// CAVEAT: gpt-4o-mini-tts's handling of the "speed" field is less consistently
+// documented/reliable than tts-1-hd's — if episode audio durations start drifting
+// noticeably from estimateDurationSeconds()'s prediction, verify speed is actually
+// being honored before trusting the estimate.
 // Voice: onyx — deep, authoritative, broadcast-quality male voice
 // No SSML needed — pauses driven by punctuation in the script
 
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const MODEL  = "gpt-4o-mini-tts";
 const VOICE  = "onyx";
+// 1.05 trades a little numeric clarity for pacing/energy (deliberate choice —
+// the script requires exact spoken prices/percentages for every holding, so
+// don't push this much higher without re-checking intelligibility).
 const SPEED  = 1.05;
+// Natural (1.0x) speaking rate for this voice/model, empirically ~170.5 wpm.
+// EFFECTIVE_WPM below derives the actual rate from SPEED so estimates and
+// word-count targets elsewhere never need separate hand-tuning.
+const BASE_WPM = 170.5;
+export const EFFECTIVE_WPM = Math.round(BASE_WPM * SPEED);
 const INSTRUCTIONS =
   "Deliver this like an experienced financial radio broadcaster — confident, " +
   "engaged, and alert, never flat or robotic. Vary your pacing and emphasis " +
@@ -81,6 +93,6 @@ export async function generateAudio(script: string): Promise<Buffer> {
   return Buffer.concat(buffers);
 }
 
-export function estimateDurationSeconds(wordCount: number, wpm = 179): number {
+export function estimateDurationSeconds(wordCount: number, wpm = EFFECTIVE_WPM): number {
   return Math.round((wordCount / wpm) * 60);
 }

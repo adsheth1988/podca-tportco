@@ -1,4 +1,7 @@
 import { PORTFOLIO_HOLDINGS } from "@/config/portfolio";
+import { mapWithConcurrency } from "@/lib/concurrency";
+
+const PRICE_FETCH_CONCURRENCY = 6;
 
 export interface TickerPrice {
   ticker: string;
@@ -18,9 +21,13 @@ export interface PortfolioSnapshot {
 
 const PORTFOLIO_VALUE = 100_000;
 
-// Normalize top 10 weights to sum to 100% for a clean portfolio calculation
-const totalWeight = PORTFOLIO_HOLDINGS.reduce((s, h) => s + h.weight, 0);
-const NORMALIZED = PORTFOLIO_HOLDINGS.map((h) => ({
+// The spoken "portfolio closed X%" figure reflects only the 9 primary
+// holdings actually covered in the episode — secondary/fallback-only
+// holdings (news sources, never discussed on air) are excluded so the
+// announced number always matches what the episode talks about.
+const PRIMARY_HOLDINGS = PORTFOLIO_HOLDINGS.filter((h) => h.isPrimaryFocus !== false);
+const totalWeight = PRIMARY_HOLDINGS.reduce((s, h) => s + h.weight, 0);
+const NORMALIZED = PRIMARY_HOLDINGS.map((h) => ({
   ...h,
   normalizedWeight: h.weight / totalWeight,
 }));
@@ -68,11 +75,18 @@ function formatEST(date: Date): string {
 }
 
 export async function fetchPortfolioSnapshot(): Promise<PortfolioSnapshot> {
-  const results = await Promise.all(
-    PORTFOLIO_HOLDINGS.map((h) => fetchPrice(h.ticker))
+  // Yahoo's chart endpoint is unauthenticated and undocumented — cap
+  // concurrency instead of firing all 20 holding requests at once.
+  const results = await mapWithConcurrency(
+    PORTFOLIO_HOLDINGS,
+    PRICE_FETCH_CONCURRENCY,
+    (h) => fetchPrice(h.ticker)
   );
 
-  const prices: TickerPrice[] = results.filter((r): r is TickerPrice => r !== null);
+  const prices: TickerPrice[] = results
+    .filter((r): r is PromiseFulfilledResult<TickerPrice | null> => r.status === "fulfilled")
+    .map((r) => r.value)
+    .filter((v): v is TickerPrice => v !== null);
 
   // Weighted portfolio return using normalized weights
   let portfolioChangePercent = 0;
