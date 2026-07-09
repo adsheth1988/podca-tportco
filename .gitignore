@@ -44,3 +44,9 @@ next-env.d.ts
 /public/audio/*.mp3
 /public/audio/*.txt
 /data/episodes/*.json
+
+# tts sandbox (scripts/tts-sandbox/) — Python/Modal experiment, not part of the app
+scripts/tts-sandbox/.venv/
+scripts/tts-sandbox/__pycache__/
+scripts/tts-sandbox/*.wav
+scripts/tts-sandbox/output.wav
