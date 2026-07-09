@@ -15,6 +15,8 @@ import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "../src/script/generator";
 import { generateAudio, estimateDurationSeconds } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
+import { PORTFOLIO_HOLDINGS } from "../src/config/portfolio";
+import { QQQ_PODCAST } from "../src/config/podcasts";
 import type { Episode } from "../src/types/episode";
 
 function getEstNow(): Date {
@@ -107,8 +109,8 @@ async function main() {
   // Step 1: Fetch news + prices in parallel
   console.log("[generate] Step 1: Fetching news + prices…");
   const [news, snapshot] = await Promise.all([
-    aggregatePortfolioNews(),
-    fetchPortfolioSnapshot(),
+    aggregatePortfolioNews(PORTFOLIO_HOLDINGS),
+    fetchPortfolioSnapshot(PORTFOLIO_HOLDINGS),
   ]);
   console.log(
     `[generate] News: ${news.portfolioArticles.length} portfolio + ${news.macroArticles.length} macro`
@@ -116,7 +118,9 @@ async function main() {
 
   // Step 2: Generate script with Claude
   console.log("[generate] Step 2: Generating script with Claude…");
-  const script = await generatePodcastScript(news, getMarketDateLabel(), snapshot, isWeekendRun());
+  const script = await generatePodcastScript(
+    news, getMarketDateLabel(), snapshot, isWeekendRun(), PORTFOLIO_HOLDINGS, QQQ_PODCAST
+  );
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
   console.log(`[generate] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);

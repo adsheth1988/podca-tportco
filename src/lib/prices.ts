@@ -1,4 +1,4 @@
-import { PORTFOLIO_HOLDINGS } from "@/config/portfolio";
+import type { Holding } from "@/config/portfolio";
 import { mapWithConcurrency } from "@/lib/concurrency";
 
 const PRICE_FETCH_CONCURRENCY = 6;
@@ -14,23 +14,12 @@ export interface TickerPrice {
 export interface PortfolioSnapshot {
   prices: TickerPrice[];
   portfolioChangePercent: number;
-  portfolioPnL: number;         // dollar P&L on $100k
-  portfolioValue: number;       // current value of $100k
+  portfolioPnL: number;         // dollar P&L on baseValue
+  portfolioValue: number;       // current value (baseValue + P&L)
   generatedAtEST: string;       // "June 18, 2026 at 5:02 PM ET"
 }
 
-const PORTFOLIO_VALUE = 100_000;
-
-// The spoken "portfolio closed X%" figure reflects only the 9 primary
-// holdings actually covered in the episode — secondary/fallback-only
-// holdings (news sources, never discussed on air) are excluded so the
-// announced number always matches what the episode talks about.
-const PRIMARY_HOLDINGS = PORTFOLIO_HOLDINGS.filter((h) => h.isPrimaryFocus !== false);
-const totalWeight = PRIMARY_HOLDINGS.reduce((s, h) => s + h.weight, 0);
-const NORMALIZED = PRIMARY_HOLDINGS.map((h) => ({
-  ...h,
-  normalizedWeight: h.weight / totalWeight,
-}));
+const DEFAULT_QQQ_BASE_VALUE = 100_000; // fictional tracking base for the QQQ podcast
 
 async function fetchPrice(ticker: string): Promise<TickerPrice | null> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
@@ -74,11 +63,29 @@ function formatEST(date: Date): string {
   }).replace(",", "") + " ET";
 }
 
-export async function fetchPortfolioSnapshot(): Promise<PortfolioSnapshot> {
+// The spoken "portfolio closed X%" figure reflects only the holdings marked
+// isPrimaryFocus (undefined counts as primary) — secondary/fallback-only
+// holdings (news sources, never discussed on air) are excluded so the
+// announced number always matches what the episode talks about.
+//
+// baseValue: for the QQQ podcast this is the fictional $100k tracking base;
+// for the personal podcast, pass the real SnapTrade-derived portfolio total
+// so portfolioValue/portfolioPnL reflect the user's actual account value.
+export async function fetchPortfolioSnapshot(
+  holdings: Holding[],
+  baseValue: number = DEFAULT_QQQ_BASE_VALUE
+): Promise<PortfolioSnapshot> {
+  const primaryHoldings = holdings.filter((h) => h.isPrimaryFocus !== false);
+  const totalWeight = primaryHoldings.reduce((s, h) => s + h.weight, 0);
+  const normalized = primaryHoldings.map((h) => ({
+    ...h,
+    normalizedWeight: totalWeight > 0 ? h.weight / totalWeight : 0,
+  }));
+
   // Yahoo's chart endpoint is unauthenticated and undocumented — cap
-  // concurrency instead of firing all 20 holding requests at once.
+  // concurrency instead of firing all requests at once.
   const results = await mapWithConcurrency(
-    PORTFOLIO_HOLDINGS,
+    holdings,
     PRICE_FETCH_CONCURRENCY,
     (h) => fetchPrice(h.ticker)
   );
@@ -90,13 +97,13 @@ export async function fetchPortfolioSnapshot(): Promise<PortfolioSnapshot> {
 
   // Weighted portfolio return using normalized weights
   let portfolioChangePercent = 0;
-  for (const norm of NORMALIZED) {
+  for (const norm of normalized) {
     const p = prices.find((px) => px.ticker === norm.ticker);
     if (p) portfolioChangePercent += p.changePercent * norm.normalizedWeight;
   }
 
-  const portfolioPnL   = (portfolioChangePercent / 100) * PORTFOLIO_VALUE;
-  const portfolioValue = PORTFOLIO_VALUE + portfolioPnL;
+  const portfolioPnL   = (portfolioChangePercent / 100) * baseValue;
+  const portfolioValue = baseValue + portfolioPnL;
 
   return {
     prices,

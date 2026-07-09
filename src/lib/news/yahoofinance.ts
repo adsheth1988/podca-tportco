@@ -1,5 +1,5 @@
 import type { NewsItem } from "@/types/news";
-import { PORTFOLIO_MAP } from "@/config/portfolio";
+import type { Holding } from "@/config/portfolio";
 import { mapWithConcurrency } from "@/lib/concurrency";
 
 const RSS_CONCURRENCY = 6;
@@ -31,7 +31,7 @@ function parseItems(xml: string): Array<{ title: string; link: string; descripti
   }));
 }
 
-async function fetchTickerRss(ticker: string): Promise<NewsItem[]> {
+async function fetchTickerRss(ticker: string, holdingMap: Map<string, Holding>): Promise<NewsItem[]> {
   const url = `${RSS_BASE}?s=${ticker}&region=US&lang=en-US`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8_000);
@@ -45,7 +45,7 @@ async function fetchTickerRss(ticker: string): Promise<NewsItem[]> {
 
   const xml = await res.text();
   const items = parseItems(xml);
-  const holding = PORTFOLIO_MAP.get(ticker);
+  const holding = holdingMap.get(ticker);
 
   return items.slice(0, 4).map((item, i) => ({
     id:              `yf-${ticker}-${i}`,
@@ -68,8 +68,11 @@ async function fetchTickerRss(ticker: string): Promise<NewsItem[]> {
 // endpoint is unauthenticated and undocumented, so firing all requests at
 // once (esp. now that the tracked portfolio has grown to 20 tickers) risks
 // throttling.
-export async function fetchYahooFinanceNews(tickers: string[]): Promise<NewsItem[]> {
-  const results = await mapWithConcurrency(tickers, RSS_CONCURRENCY, fetchTickerRss);
+export async function fetchYahooFinanceNews(
+  tickers: string[],
+  holdingMap: Map<string, Holding>
+): Promise<NewsItem[]> {
+  const results = await mapWithConcurrency(tickers, RSS_CONCURRENCY, (t) => fetchTickerRss(t, holdingMap));
   const articles: NewsItem[] = [];
 
   for (let i = 0; i < results.length; i++) {

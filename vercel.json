@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/generate-live-episode",
+      "schedule": "55 20 * * 1-5"
+    }
+  ]
+}
