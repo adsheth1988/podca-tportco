@@ -10,7 +10,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
     "@auth/pg-adapter": "^1.11.2",
-    "@aws-sdk/client-s3": "^3.1070.0",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.4.1",
     "date-fns": "^4.4.0",
