@@ -13,7 +13,7 @@ import path from "path";
 import fs from "fs/promises";
 import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "../src/script/generator";
-import { generateAudio, estimateDurationSeconds } from "../src/audio/tts";
+import { generateAudio, estimateDurationSeconds, withIntroStinger } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import { PORTFOLIO_HOLDINGS } from "../src/config/portfolio";
 import { QQQ_PODCAST } from "../src/config/podcasts";
@@ -111,7 +111,7 @@ async function main() {
 
   // Step 3: Synthesize audio with Google TTS
   console.log("[generate] Step 3: Synthesizing audio…");
-  const audioBuffer = await generateAudio(script);
+  const audioBuffer = await withIntroStinger(await generateAudio(script));
   console.log(`[generate] Audio: ${Math.round(audioBuffer.length / 1024)}KB`);
 
   // Save MP3 (gitignored — GH Actions will upload to GitHub Releases)

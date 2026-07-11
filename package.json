@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "gen:stingers": "tsx scripts/generate-intro-stingers.ts",
+    "gen:stinger": "tsx scripts/build-intro-stinger.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",

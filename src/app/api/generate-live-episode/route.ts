@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { aggregatePortfolioNews } from "@/lib/news/aggregator";
 import { generatePodcastScript, countWords, hasPerHoldingDollarLeak } from "@/script/generator";
-import { generateAudio, estimateDurationSeconds } from "@/audio/tts";
+import { generateAudio, estimateDurationSeconds, withIntroStinger } from "@/audio/tts";
 import { fetchPortfolioSnapshot } from "@/lib/prices";
 import { fetchLiveHoldings } from "@/lib/snaptrade/adapter";
 import { listAllConnections } from "@/lib/db/connections";
@@ -65,7 +65,7 @@ async function generateForUser(userId: string, snapTradeUserId: string, userSecr
     }
 
     const wordCount = countWords(script);
-    const audioBuffer = await generateAudio(script);
+    const audioBuffer = await withIntroStinger(await generateAudio(script));
 
     const { put } = await import("@vercel/blob");
     const { url: audioUrl } = await put(`personal-audio/${userId}/${date}.mp3`, audioBuffer, {
