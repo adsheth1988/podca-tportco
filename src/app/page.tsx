@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import PodcastPlayer from "@/components/PodcastPlayer";
 import EpisodeCard from "@/components/EpisodeCard";
 import { Episode } from "@/lib/storage";
@@ -116,6 +117,7 @@ export default function Home() {
             {marketOpen ? "Market Open" : "Market Closed"}
           </span>
           <span className="tb-clock">{clock}</span>
+          <Link href="/portfolio" className="tb-nav-link">Portfolio</Link>
         </div>
       </header>
 
