@@ -20,7 +20,7 @@ const BLOCKED_SOURCES = new Set([
   "substack.com",
 ]);
 
-function isBlocked(source: string): boolean {
+export function isBlocked(source: string): boolean {
   const domain = source.toLowerCase();
   for (const blocked of BLOCKED_SOURCES) {
     if (domain.includes(blocked)) return true;
@@ -30,7 +30,7 @@ function isBlocked(source: string): boolean {
 
 // ── Ranking ────────────────────────────────────────────────────────────────────
 
-function recencyMultiplier(publishedAt: string): number {
+export function recencyMultiplier(publishedAt: string): number {
   const ageHours = (Date.now() - new Date(publishedAt).getTime()) / 3_600_000;
   if (ageHours <  4) return 1.00;
   if (ageHours <  8) return 0.90;
@@ -40,7 +40,7 @@ function recencyMultiplier(publishedAt: string): number {
   return 0.30;
 }
 
-function computeRankScore(
+export function computeRankScore(
   portfolioWeight: number,
   sentimentScore: number,
   publishedAt: string
@@ -52,7 +52,7 @@ function computeRankScore(
 
 // ── Deduplication ──────────────────────────────────────────────────────────────
 
-function deduplicateByUrl<T extends { url: string }>(items: T[]): T[] {
+export function deduplicateByUrl<T extends { url: string }>(items: T[]): T[] {
   const seen = new Set<string>();
   return items.filter((item) => {
     const key = item.url.split("?")[0].toLowerCase();
