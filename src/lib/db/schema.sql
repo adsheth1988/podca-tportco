@@ -53,6 +53,15 @@ CREATE TABLE IF NOT EXISTS brokerage_connections (
   UNIQUE("userId")
 );
 
+-- Invite/approval gate for sign-in, checked by src/auth.ts's signIn callback
+-- in addition to the OWNER_EMAILS allowlist. Populated via the /admin page
+-- (src/app/api/admin/approve/route.ts), which promotes a waitlist signup
+-- (src/lib/waitlist.ts) into real access.
+CREATE TABLE IF NOT EXISTS approved_emails (
+  email      TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Personal-podcast episodes (kept out of git — see src/lib/storage.ts).
 CREATE TABLE IF NOT EXISTS personal_episodes (
   id                UUID DEFAULT gen_random_uuid() PRIMARY KEY,

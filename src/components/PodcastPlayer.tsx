@@ -6,6 +6,14 @@ import { Episode } from "@/lib/storage";
 
 interface Props {
   episode: Episode;
+  title?: string;
+  subtitle?: string;
+  downloadName?: string;
+  // Defaults to the public show's static-file transcript fetch. The
+  // personal show passes its own (session-scoped /api/personal-episodes
+  // response is shaped differently — { episode: {...} } vs the public
+  // static file's bare Episode object).
+  fetchScript?: () => Promise<string>;
 }
 
 function formatTime(s: number): string {
@@ -14,7 +22,7 @@ function formatTime(s: number): string {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
-export default function PodcastPlayer({ episode }: Props) {
+export default function PodcastPlayer({ episode, title, subtitle, downloadName, fetchScript }: Props) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [current, setCurrent] = useState(0);
@@ -41,9 +49,13 @@ export default function PodcastPlayer({ episode }: Props) {
 
   async function loadScript() {
     if (scriptLoaded) return;
-    const res = await fetch(`/data/episodes/${episode.id}.json`, { cache: "no-store" });
-    const data: Episode = await res.json();
-    setFullScript(data.script ?? "");
+    if (fetchScript) {
+      setFullScript(await fetchScript());
+    } else {
+      const res = await fetch(`/data/episodes/${episode.id}.json`, { cache: "no-store" });
+      const data: Episode = await res.json();
+      setFullScript(data.script ?? "");
+    }
     setScriptLoaded(true);
   }
 
@@ -80,8 +92,8 @@ export default function PodcastPlayer({ episode }: Props) {
       <div className="player-meta">
         <div className="player-icon">📈</div>
         <div>
-          <h2 className="player-title">QQQ Daily — {format(parseISO(episode.date), "MMMM d, yyyy")}</h2>
-          <p className="player-subtitle">QQQ Daily · Top 10 Holdings Recap</p>
+          <h2 className="player-title">{title ?? `QQQ Daily — ${format(parseISO(episode.date), "MMMM d, yyyy")}`}</h2>
+          <p className="player-subtitle">{subtitle ?? "QQQ Daily · Top 10 Holdings Recap"}</p>
         </div>
       </div>
 
@@ -126,7 +138,7 @@ export default function PodcastPlayer({ episode }: Props) {
           <a
             className="download-btn"
             href={episode.audioUrl}
-            download={`QQQ-Daily-${episode.date}.mp3`}
+            download={`${downloadName ?? `QQQ-Daily-${episode.date}`}.mp3`}
           >
             ↓ Download MP3
           </a>

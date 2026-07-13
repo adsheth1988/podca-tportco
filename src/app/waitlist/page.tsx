@@ -11,17 +11,33 @@ export default function WaitlistPage() {
   const [email, setEmail]     = useState("");
   const [error, setError]     = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValidEmail(email)) {
       setError("Enter a valid email address.");
       return;
     }
     setError(null);
-    // TODO: wire up real persistence (API route + storage) when ready —
-    // this currently only confirms client-side, nothing is saved yet.
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong. Try again.");
+        return;
+      }
+      setSubmitted(true);
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -47,8 +63,8 @@ export default function WaitlistPage() {
               onChange={(e) => { setEmail(e.target.value); setError(null); }}
               aria-label="Email address"
             />
-            <button type="submit" className="waitlist-btn">
-              Join the Waitlist
+            <button type="submit" className="waitlist-btn" disabled={submitting}>
+              {submitting ? "Joining…" : "Join the Waitlist"}
             </button>
             {error && <p className="waitlist-error">{error}</p>}
           </form>
