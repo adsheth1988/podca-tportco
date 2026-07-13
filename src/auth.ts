@@ -2,11 +2,12 @@ import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import PostgresAdapter from "@auth/pg-adapter";
 import { getPool } from "@/lib/db/client";
+import { isApproved } from "@/lib/db/approvals";
 
-// MVP: sign-in is restricted to the owner via an email allowlist below.
-// The underlying model is already a real multi-user `users` table, so
-// removing this allowlist later (multi-user phase) needs no re-architecture.
-const OWNER_EMAILS = (process.env.OWNER_EMAILS ?? "")
+// The owner always has access; everyone else needs an approved_emails row
+// (see src/lib/db/approvals.ts and the /admin approval page). Exported so
+// the admin route can restrict itself to the owner too.
+export const OWNER_EMAILS = (process.env.OWNER_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
@@ -22,7 +23,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => ({
   callbacks: {
     async signIn({ user }) {
       if (!user.email) return false;
-      return OWNER_EMAILS.includes(user.email.toLowerCase());
+      const email = user.email.toLowerCase();
+      if (OWNER_EMAILS.includes(email)) return true;
+      return isApproved(email);
+    },
+    // Drives proxy.ts's gating: `auth` is re-exported there as the default
+    // export (not called at module scope — see proxy.ts for why), so this
+    // is what decides whether a gated request gets redirected to sign-in.
+    authorized({ auth }) {
+      return !!auth;
     },
   },
 }));
