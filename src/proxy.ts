@@ -20,7 +20,12 @@ export const config = {
   matcher: [
     "/settings/:path*",
     "/api/snaptrade/:path*",
-    "/api/generate-live-episode",
+    // NOT /api/generate-live-episode — it's cron-triggered (Vercel Cron has
+    // no user session) and already gates itself via its own CRON_SECRET
+    // bearer-token check (see isAuthorized() in that route). Session-gating
+    // it here would 307-redirect every cron invocation to /api/auth/signin
+    // before it ever reached that check, silently breaking the daily
+    // personal-podcast generation.
     "/api/personal-episodes/:path*",
     "/admin/:path*",
     "/api/admin/:path*",
