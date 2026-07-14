@@ -17,7 +17,7 @@ export const QQQ_PODCAST: PodcastIdentity = {
   showName: "The Portfolio Podcast for QQQ",
   recapLabel: "QQQ recap",
   aggregateDollarAllowed: false,
-  perHoldingDollarAllowed: true,
+  perHoldingDollarAllowed: false,
 };
 
 export const PERSONAL_PODCAST: PodcastIdentity = {
@@ -33,7 +33,7 @@ export const SOXX_PODCAST: PodcastIdentity = {
   showName: "The Portfolio Podcast for SOXX",
   recapLabel: "SOXX recap",
   aggregateDollarAllowed: false,
-  perHoldingDollarAllowed: true,
+  perHoldingDollarAllowed: false,
 };
 
 export const MEME_PODCAST: PodcastIdentity = {
@@ -41,5 +41,5 @@ export const MEME_PODCAST: PodcastIdentity = {
   showName: "The Portfolio Podcast for MEME",
   recapLabel: "MEME recap",
   aggregateDollarAllowed: false,
-  perHoldingDollarAllowed: true,
+  perHoldingDollarAllowed: false,
 };

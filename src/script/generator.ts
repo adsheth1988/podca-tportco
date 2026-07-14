@@ -291,7 +291,7 @@ export function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
-// Post-generation guardrail for the `personal` profile: confirms no dollar
+// Post-generation guardrail for percent-only profiles: confirms no dollar
 // figure appears anywhere outside the welcome line (where the aggregate
 // total is intentionally allowed). Returns true if a leak was found.
 export function hasPerHoldingDollarLeak(script: string, identity: PodcastIdentity): boolean {

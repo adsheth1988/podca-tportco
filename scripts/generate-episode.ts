@@ -20,7 +20,7 @@
 import path from "path";
 import fs from "fs/promises";
 import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
-import { generatePodcastScript, countWords } from "../src/script/generator";
+import { generatePodcastScript, countWords, hasPerHoldingDollarLeak } from "../src/script/generator";
 import { generateAudio, estimateDurationSeconds } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import { PORTFOLIO_HOLDINGS, type Holding } from "../src/config/portfolio";
@@ -141,9 +141,22 @@ async function generateOne(config: PodcastConfig, id: string, repo: string): Pro
 
   // Step 2: Generate script with Claude
   console.log(`[generate:${slug}] Step 2: Generating script with Claude…`);
-  const script = await generatePodcastScript(
+  let script = await generatePodcastScript(
     news, getMarketDateLabel(), snapshot, isWeekendRun(), holdings, identity
   );
+
+  // One retry if the percent-only guardrail trips — if it trips twice, fail
+  // loudly rather than publish an episode with a leaked per-holding price.
+  if (hasPerHoldingDollarLeak(script, identity)) {
+    console.log(`[generate:${slug}] Dollar-figure leak detected, retrying script generation…`);
+    script = await generatePodcastScript(
+      news, getMarketDateLabel(), snapshot, isWeekendRun(), holdings, identity
+    );
+    if (hasPerHoldingDollarLeak(script, identity)) {
+      throw new Error(`[generate:${slug}] Generated script leaked a per-holding dollar figure twice — aborting`);
+    }
+  }
+
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
   console.log(`[generate:${slug}] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);
