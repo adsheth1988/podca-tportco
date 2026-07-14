@@ -1,12 +1,20 @@
 #!/usr/bin/env tsx
 /**
  * Standalone pipeline script — runs in GitHub Actions (or locally).
- * Fetches news → generates script → synthesizes audio → writes output files.
+ * Generates an episode for each configured podcast (QQQ, SOXX, MEME):
+ * fetches news → generates script → synthesizes audio → writes output files.
  *
- * Output:
+ * QQQ keeps its original (pre-multi-podcast) file layout so nothing that
+ * already reads it needs to change:
  *   public/audio/{date}.mp3          (gitignored — uploaded to GitHub Releases)
  *   public/data/episodes/{date}.json (full episode with script)
  *   public/data/episodes.json        (list of all episodes, no scripts)
+ *
+ * SOXX/MEME use a slug-prefixed layout to avoid colliding with QQQ or each
+ * other on the same date:
+ *   public/audio/{slug}-{date}.mp3
+ *   public/data/episodes/{slug}/{date}.json
+ *   public/data/episodes-{slug}.json
  */
 
 import path from "path";
@@ -15,8 +23,10 @@ import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "../src/script/generator";
 import { generateAudio, estimateDurationSeconds } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
-import { PORTFOLIO_HOLDINGS } from "../src/config/portfolio";
-import { QQQ_PODCAST } from "../src/config/podcasts";
+import { PORTFOLIO_HOLDINGS, type Holding } from "../src/config/portfolio";
+import { SOXX_HOLDINGS } from "../src/config/soxx";
+import { MEME_HOLDINGS } from "../src/config/meme";
+import { QQQ_PODCAST, SOXX_PODCAST, MEME_PODCAST, type PodcastIdentity } from "../src/config/podcasts";
 import type { Episode } from "../src/types/episode";
 
 function getEstNow(): Date {
@@ -80,61 +90,74 @@ const NYSE_HOLIDAYS = new Set([
   "2027-12-24", // Christmas Day (observed — December 25 falls on Saturday)
 ]);
 
-async function main() {
-  const id = getEstDateISO();
-  const repo = process.env.GITHUB_REPOSITORY ?? "adsheth1988/podcastportco";
-  const audioUrl = `https://github.com/${repo}/releases/download/episode-${id}/${id}.mp3`;
+interface PodcastConfig {
+  slug: string;
+  holdings: Holding[];
+  identity: PodcastIdentity;
+  legacyPaths: boolean; // true only for QQQ — keeps its pre-existing unprefixed paths
+}
 
-  // Skip NYSE holidays — market closed, no data worth reporting
-  if (NYSE_HOLIDAYS.has(id)) {
-    console.log(`[generate] ${id} is a NYSE holiday — no episode today.`);
-    process.exit(0);
-  }
+const PODCASTS: PodcastConfig[] = [
+  { slug: "qqq",  holdings: PORTFOLIO_HOLDINGS, identity: QQQ_PODCAST,  legacyPaths: true },
+  { slug: "soxx", holdings: SOXX_HOLDINGS,      identity: SOXX_PODCAST, legacyPaths: false },
+  { slug: "meme", holdings: MEME_HOLDINGS,      identity: MEME_PODCAST, legacyPaths: false },
+];
+
+async function generateOne(config: PodcastConfig, id: string, repo: string): Promise<void> {
+  const { slug, holdings, identity, legacyPaths } = config;
+  const audioFileName = legacyPaths ? `${id}.mp3` : `${slug}-${id}.mp3`;
+  const releaseTag = legacyPaths ? `episode-${id}` : `episode-${slug}-${id}`;
+  const audioUrl = `https://github.com/${repo}/releases/download/${releaseTag}/${audioFileName}`;
+  const listPath = legacyPaths
+    ? path.join(process.cwd(), "public", "data", "episodes.json")
+    : path.join(process.cwd(), "public", "data", `episodes-${slug}.json`);
+  const episodesDir = legacyPaths
+    ? path.join(process.cwd(), "public", "data", "episodes")
+    : path.join(process.cwd(), "public", "data", "episodes", slug);
 
   // Skip if today's episode already exists and is ready (handles DST double-trigger)
-  const listPath = path.join(process.cwd(), "public", "data", "episodes.json");
   try {
     const existing = JSON.parse(await fs.readFile(listPath, "utf-8")) as Episode[];
     const todayEp = existing.find((e) => e.id === id);
     if (todayEp?.status === "ready") {
-      console.log(`[generate] Episode ${id} already ready — skipping.`);
-      process.exit(0);
+      console.log(`[generate:${slug}] Episode ${id} already ready — skipping.`);
+      return;
     }
   } catch {
-    // No episodes.json yet — first run
+    // No list file yet — first run for this podcast
   }
 
-  console.log(`[generate] Starting episode ${id}…`);
+  console.log(`[generate:${slug}] Starting episode ${id}…`);
 
   // Step 1: Fetch news + prices in parallel
-  console.log("[generate] Step 1: Fetching news + prices…");
+  console.log(`[generate:${slug}] Step 1: Fetching news + prices…`);
   const [news, snapshot] = await Promise.all([
-    aggregatePortfolioNews(PORTFOLIO_HOLDINGS),
-    fetchPortfolioSnapshot(PORTFOLIO_HOLDINGS),
+    aggregatePortfolioNews(holdings),
+    fetchPortfolioSnapshot(holdings),
   ]);
   console.log(
-    `[generate] News: ${news.portfolioArticles.length} portfolio + ${news.macroArticles.length} macro`
+    `[generate:${slug}] News: ${news.portfolioArticles.length} portfolio + ${news.macroArticles.length} macro`
   );
 
   // Step 2: Generate script with Claude
-  console.log("[generate] Step 2: Generating script with Claude…");
+  console.log(`[generate:${slug}] Step 2: Generating script with Claude…`);
   const script = await generatePodcastScript(
-    news, getMarketDateLabel(), snapshot, isWeekendRun(), PORTFOLIO_HOLDINGS, QQQ_PODCAST
+    news, getMarketDateLabel(), snapshot, isWeekendRun(), holdings, identity
   );
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
-  console.log(`[generate] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);
+  console.log(`[generate:${slug}] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);
 
-  // Step 3: Synthesize audio with Google TTS
-  console.log("[generate] Step 3: Synthesizing audio…");
+  // Step 3: Synthesize audio
+  console.log(`[generate:${slug}] Step 3: Synthesizing audio…`);
   const audioBuffer = await generateAudio(script);
-  console.log(`[generate] Audio: ${Math.round(audioBuffer.length / 1024)}KB`);
+  console.log(`[generate:${slug}] Audio: ${Math.round(audioBuffer.length / 1024)}KB`);
 
   // Save MP3 (gitignored — GH Actions will upload to GitHub Releases)
   const audioDir = path.join(process.cwd(), "public", "audio");
   await fs.mkdir(audioDir, { recursive: true });
-  await fs.writeFile(path.join(audioDir, `${id}.mp3`), audioBuffer);
-  console.log(`[generate] Saved public/audio/${id}.mp3`);
+  await fs.writeFile(path.join(audioDir, audioFileName), audioBuffer);
+  console.log(`[generate:${slug}] Saved public/audio/${audioFileName}`);
 
   // Build episode record
   const now = new Date().toISOString();
@@ -153,13 +176,12 @@ async function main() {
   };
 
   // Save individual episode JSON (includes full script for transcript view)
-  const episodesDir = path.join(process.cwd(), "public", "data", "episodes");
   await fs.mkdir(episodesDir, { recursive: true });
   await fs.writeFile(
     path.join(episodesDir, `${id}.json`),
     JSON.stringify(episode, null, 2)
   );
-  console.log(`[generate] Saved public/data/episodes/${id}.json`);
+  console.log(`[generate:${slug}] Saved ${path.relative(process.cwd(), episodesDir)}/${id}.json`);
 
   // Update episodes list (strip script to keep the list payload small)
   let episodes: Episode[] = [];
@@ -172,9 +194,33 @@ async function main() {
   episodes = [listEntry, ...episodes.filter((e) => e.id !== id)];
   await fs.mkdir(path.dirname(listPath), { recursive: true });
   await fs.writeFile(listPath, JSON.stringify(episodes, null, 2));
-  console.log(`[generate] Updated public/data/episodes.json (${episodes.length} total)`);
+  console.log(`[generate:${slug}] Updated ${path.relative(process.cwd(), listPath)} (${episodes.length} total)`);
 
-  console.log(`[generate] Done! Audio will be at: ${audioUrl}`);
+  console.log(`[generate:${slug}] Done! Audio will be at: ${audioUrl}`);
+}
+
+async function main() {
+  const id = getEstDateISO();
+  const repo = process.env.GITHUB_REPOSITORY ?? "adsheth1988/podcastportco";
+
+  // Skip NYSE holidays — market closed, no data worth reporting
+  if (NYSE_HOLIDAYS.has(id)) {
+    console.log(`[generate] ${id} is a NYSE holiday — no episodes today.`);
+    process.exit(0);
+  }
+
+  let anyFailed = false;
+  for (const config of PODCASTS) {
+    console.log(`\n[generate] === ${config.slug.toUpperCase()} ===`);
+    try {
+      await generateOne(config, id, repo);
+    } catch (err) {
+      anyFailed = true;
+      console.error(`[generate:${config.slug}] Failed:`, err);
+    }
+  }
+
+  if (anyFailed) process.exit(1);
 }
 
 main().catch((err) => {

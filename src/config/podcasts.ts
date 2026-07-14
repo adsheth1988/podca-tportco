@@ -27,3 +27,19 @@ export const PERSONAL_PODCAST: PodcastIdentity = {
   aggregateDollarAllowed: true,
   perHoldingDollarAllowed: false,
 };
+
+export const SOXX_PODCAST: PodcastIdentity = {
+  id: "soxx",
+  showName: "The Portfolio Podcast for SOXX",
+  recapLabel: "SOXX recap",
+  aggregateDollarAllowed: false,
+  perHoldingDollarAllowed: true,
+};
+
+export const MEME_PODCAST: PodcastIdentity = {
+  id: "meme",
+  showName: "The Portfolio Podcast for MEME",
+  recapLabel: "MEME recap",
+  aggregateDollarAllowed: false,
+  perHoldingDollarAllowed: true,
+};
