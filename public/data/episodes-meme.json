@@ -2,14 +2,14 @@
   {
     "id": "2026-07-14",
     "date": "2026-07-14",
-    "status": "pending",
+    "status": "ready",
     "script": null,
     "audioUrl": "https://github.com/adsheth1988/podca-tportco/releases/download/episode-meme-2026-07-14/meme-2026-07-14.mp3",
-    "durationSeconds": 316,
-    "wordCount": 944,
+    "durationSeconds": 307,
+    "wordCount": 916,
     "articleCount": 37,
-    "generatedAt": "2026-07-14T06:59:51.961Z",
+    "generatedAt": "2026-07-14T07:11:59.244Z",
     "errorMessage": null,
-    "createdAt": "2026-07-14T06:59:51.961Z"
+    "createdAt": "2026-07-14T07:11:59.244Z"
   }
 ]
