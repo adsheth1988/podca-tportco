@@ -1,7 +1,8 @@
 // SOXX (iShares Semiconductor ETF) holdings — top 10 by weight, which is
 // the fund's most concentrated tier (~60% of total assets across its 34
 // holdings). Weights sourced from public ETF-holdings aggregators, July
-// 2026. Update quarterly, same cadence as portfolio.ts.
+// 2026. Refreshed automatically by a weekly scheduled Routine, same as
+// portfolio.ts — manual edits are fine but may be overwritten next run.
 import type { Holding } from "@/config/portfolio";
 
 export const SOXX_HOLDINGS: Holding[] = [

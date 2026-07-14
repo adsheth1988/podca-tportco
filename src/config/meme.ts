@@ -1,11 +1,11 @@
 // MEME (Roundhill Meme Stock ETF) holdings. Unlike QQQ/SOXX, this is an
 // actively-managed strategy fund that rotates its ~10-21 holdings on a
-// roughly monthly basis — this list needs refreshing far more often than
-// portfolio.ts/soxx.ts. Top 5 weights are well-confirmed as of July 2026
-// research; the remainder are lower-confidence estimates for names
-// consistently cited as current holdings but without a precisely
-// confirmed weight — treat those as working estimates, same as SPCX in
-// portfolio.ts, pending a confirmed figure.
+// roughly monthly basis, so accuracy here depends more on the weekly
+// scheduled Routine actually catching composition changes promptly.
+// Top 5 weights are well-confirmed as of July 2026 research; the
+// remainder are lower-confidence estimates for names consistently cited
+// as current holdings but without a precisely confirmed weight — treat
+// those as working estimates, same as SPCX in portfolio.ts.
 import type { Holding } from "@/config/portfolio";
 
 export const MEME_HOLDINGS: Holding[] = [

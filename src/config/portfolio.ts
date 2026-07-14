@@ -1,5 +1,7 @@
 // QQQ Nasdaq-100 top 20 holdings — single source of truth for the portfolio.
-// Weights sourced from Invesco fact sheet (late June 2026). Update quarterly.
+// Weights sourced from Invesco fact sheet (late June 2026). Refreshed
+// automatically by a weekly scheduled Routine (see "weekly holdings refresh"
+// in project notes) — manual edits are fine but may be overwritten next run.
 // Top 9 are primary podcast focus; 10-20 are fallback news sources.
 // Note: GOOGL and GOOG (same company, different share classes) combined into GOOGL position.
 // SpaceX (SPCX) joined the Nasdaq-100 on 2026-07-07 via fast-track inclusion;
