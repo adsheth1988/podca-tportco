@@ -15,10 +15,8 @@ interface Quote {
 }
 
 const ETF_NAMES: Record<string, string> = {
-  SPY:  "S&P 500 ETF",
   QQQ:  "Nasdaq-100 ETF",
   SOXX: "Semiconductor ETF",
-  IWM:  "Russell 2000 ETF",
   MEME: "Roundhill Meme ETF",
 };
 

@@ -1,5 +1,5 @@
 // Top holdings per ETF — update quarterly from fund fact sheets.
-// Sources: SPDR (SPY), Invesco (QQQ), iShares (SOXX, IWM), Roundhill (MEME)
+// Sources: Invesco (QQQ), iShares (SOXX), Roundhill (MEME)
 // QQQ holdings are derived from config/portfolio.ts (the podcast's own source
 // of truth) rather than duplicated here, so the sidebar can't drift out of
 // sync with what the podcast actually covers.
@@ -18,20 +18,6 @@ export interface ETFInfo {
 }
 
 export const ETF_HOLDINGS: Record<string, ETFInfo> = {
-  SPY: {
-    fullName: "SPDR S&P 500 ETF Trust",
-    holdings: [
-      { ticker: "AAPL",  name: "Apple Inc.",            weight: 7.18 },
-      { ticker: "MSFT",  name: "Microsoft Corp.",       weight: 6.55 },
-      { ticker: "NVDA",  name: "NVIDIA Corp.",          weight: 6.08 },
-      { ticker: "AMZN",  name: "Amazon.com Inc.",       weight: 3.78 },
-      { ticker: "META",  name: "Meta Platforms",        weight: 2.82 },
-      { ticker: "GOOGL", name: "Alphabet (Google)",      weight: 4.27 },
-      { ticker: "TSLA",  name: "Tesla Inc.",            weight: 1.82 },
-      { ticker: "AVGO",  name: "Broadcom Inc.",         weight: 1.74 },
-      { ticker: "BRK.B", name: "Berkshire Hathaway B",  weight: 1.65 },
-    ],
-  },
   QQQ: {
     fullName: "Invesco QQQ Trust",
     holdings: PORTFOLIO_BY_WEIGHT.slice(0, 10).map(h => ({
@@ -53,21 +39,6 @@ export const ETF_HOLDINGS: Record<string, ETFInfo> = {
       { ticker: "KLAC",  name: "KLA Corp.",             weight: 4.18 },
       { ticker: "MRVL",  name: "Marvell Technology",   weight: 3.95 },
       { ticker: "TXN",   name: "Texas Instruments",     weight: 3.42 },
-    ],
-  },
-  IWM: {
-    fullName: "iShares Russell 2000 ETF",
-    holdings: [
-      { ticker: "SMCI",  name: "Super Micro Computer",  weight: 0.56 },
-      { ticker: "DUOL",  name: "Duolingo Inc.",         weight: 0.48 },
-      { ticker: "BOOT",  name: "Boot Barn Holdings",    weight: 0.43 },
-      { ticker: "MEDP",  name: "Medpace Holdings",      weight: 0.41 },
-      { ticker: "HLNE",  name: "Hamilton Lane Inc.",    weight: 0.39 },
-      { ticker: "HQY",   name: "HealthEquity Inc.",     weight: 0.37 },
-      { ticker: "ENSG",  name: "Ensign Group Inc.",     weight: 0.35 },
-      { ticker: "MOD",   name: "Modine Manufacturing",  weight: 0.34 },
-      { ticker: "STEP",  name: "StepStone Group",       weight: 0.33 },
-      { ticker: "MGEE",  name: "MGE Energy Inc.",       weight: 0.31 },
     ],
   },
   MEME: {
