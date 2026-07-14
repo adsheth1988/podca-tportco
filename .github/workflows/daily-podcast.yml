@@ -2,11 +2,11 @@ name: Daily Podcast Generation
 
 on:
   schedule:
-    # 4:55 PM ET weekdays. ET shifts between UTC-4 (EDT, summer) and UTC-5 (EST, winter).
-    # Running both ensures exactly one fires at 4:55 PM regardless of DST.
+    # 4:20 PM ET weekdays. ET shifts between UTC-4 (EDT, summer) and UTC-5 (EST, winter).
+    # Running both ensures exactly one fires at 4:20 PM regardless of DST.
     # The episode-exists skip in generate-episode.ts makes the off-season trigger a no-op.
-    - cron: "55 20 * * 1-5"  # 4:55 PM EDT (summer, UTC-4)
-    - cron: "55 21 * * 1-5"  # 4:55 PM EST (winter, UTC-5)
+    - cron: "20 20 * * 1-5"  # 4:20 PM EDT (summer, UTC-4)
+    - cron: "20 21 * * 1-5"  # 4:20 PM EST (winter, UTC-5)
   workflow_dispatch: # Manual trigger from GitHub UI
 
 jobs:
