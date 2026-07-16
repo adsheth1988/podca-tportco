@@ -1,5 +1,18 @@
 [
   {
+    "id": "2026-07-16",
+    "date": "2026-07-16",
+    "status": "ready",
+    "script": null,
+    "audioUrl": "https://github.com/adsheth1988/podca-tportco/releases/download/episode-soxx-2026-07-16/soxx-2026-07-16.mp3",
+    "durationSeconds": 314,
+    "wordCount": 938,
+    "articleCount": 32,
+    "generatedAt": "2026-07-16T23:34:36.928Z",
+    "errorMessage": null,
+    "createdAt": "2026-07-16T23:34:36.928Z"
+  },
+  {
     "id": "2026-07-14",
     "date": "2026-07-14",
     "status": "ready",
