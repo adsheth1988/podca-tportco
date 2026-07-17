@@ -6,6 +6,11 @@ export type { Episode };
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
+// Episode ids are always "YYYY-MM-DD". Enforced here (not just at the API
+// layer) since both fs and Blob lookups below build a path/prefix directly
+// from `id` — an unvalidated id could otherwise traverse outside DATA_DIR.
+const VALID_EPISODE_ID = /^\d{4}-\d{2}-\d{2}$/;
+
 // ── Filesystem (local dev) ────────────────────────────────────────────────────
 
 const DATA_DIR = path.join(process.cwd(), "data", "episodes");
@@ -109,6 +114,7 @@ export async function saveEpisode(episode: Episode): Promise<void> {
 }
 
 export async function getEpisode(id: string): Promise<Episode | null> {
+  if (!VALID_EPISODE_ID.test(id)) return null;
   return USE_BLOB ? blobGet(id) : fsGet(id);
 }
 

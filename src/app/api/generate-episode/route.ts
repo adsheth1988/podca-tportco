@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs/promises";
 import path from "path";
+import { timingSafeEqual } from "crypto";
 import { aggregatePortfolioNews } from "@/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "@/script/generator";
 import { generateAudio, estimateDurationSeconds, withIntroStinger } from "@/audio/tts";
@@ -8,6 +9,8 @@ import { fetchPortfolioSnapshot } from "@/lib/prices";
 import { saveEpisode, getEpisode } from "@/lib/storage";
 import { PORTFOLIO_HOLDINGS } from "@/config/portfolio";
 import { QQQ_PODCAST } from "@/config/podcasts";
+import { NYSE_HOLIDAYS } from "@/config/nyse-holidays";
+import { isWeekend } from "@/lib/market-calendar";
 
 function getEstDateISO(): string {
   const estString = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
@@ -23,11 +26,22 @@ function getEstDateLabel(): string {
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
-  // No secret configured (or still on the placeholder) — open, dev-only.
-  if (!secret || secret === "change-me-to-a-random-string") return true;
+  const configured = !!secret && secret !== "change-me-to-a-random-string";
+
+  if (!configured) {
+    // No real secret set — allow only outside production. Failing open in
+    // production would let anyone on the internet trigger paid Anthropic/
+    // OpenAI calls with zero authentication just because CRON_SECRET was
+    // never configured for this deployment.
+    return process.env.NODE_ENV !== "production";
+  }
+
   // Secret is configured — every request must present it, no exceptions.
-  const authHeader = req.headers.get("authorization");
-  return authHeader === `Bearer ${secret}`;
+  // Constant-time compare so response timing can't leak the secret.
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const provided = Buffer.from(req.headers.get("authorization") ?? "");
+  if (provided.length !== expected.length) return false;
+  return timingSafeEqual(provided, expected);
 }
 
 export const maxDuration = 120;
@@ -39,6 +53,15 @@ export async function POST(req: NextRequest) {
   }
 
   const id = getEstDateISO();
+
+  // Unlike scripts/generate-episode.ts (the actual daily pipeline), this
+  // route previously had no market-hours guard at all — a stray request
+  // could generate a bogus weekend/holiday episode. `force=true` mirrors
+  // the script's FORCE_GENERATE escape hatch for manual testing.
+  const force = req.nextUrl.searchParams.get("force") === "true";
+  if (!force && (isWeekend() || NYSE_HOLIDAYS.has(id))) {
+    return NextResponse.json({ message: "Market closed — no episode today", id });
+  }
 
   const existing = await getEpisode(id);
   if (existing && existing.status === "ready") {
