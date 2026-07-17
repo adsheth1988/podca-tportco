@@ -20,7 +20,7 @@
 import path from "path";
 import fs from "fs/promises";
 import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
-import { generatePodcastScript, countWords, hasPerHoldingDollarLeak } from "../src/script/generator";
+import { generatePodcastScript, countWords } from "../src/script/generator";
 import { generateAudio, estimateDurationSeconds, withIntroStinger } from "../src/audio/tts";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import { PORTFOLIO_HOLDINGS, type Holding } from "../src/config/portfolio";
@@ -108,21 +108,16 @@ async function generateOne(config: PodcastConfig, id: string, repo: string): Pro
 
   // Step 2: Generate script with Claude
   console.log(`[generate:${slug}] Step 2: Generating script with Claude…`);
-  let script = await generatePodcastScript(
+  const script = await generatePodcastScript(
     news, getMarketDateLabel(), snapshot, isWeekend(), holdings, identity
   );
 
-  // One retry if the percent-only guardrail trips — if it trips twice, fail
-  // loudly rather than publish an episode with a leaked per-holding price.
-  if (hasPerHoldingDollarLeak(script, identity)) {
-    console.log(`[generate:${slug}] Dollar-figure leak detected, retrying script generation…`);
-    script = await generatePodcastScript(
-      news, getMarketDateLabel(), snapshot, isWeekend(), holdings, identity
-    );
-    if (hasPerHoldingDollarLeak(script, identity)) {
-      throw new Error(`[generate:${slug}] Generated script leaked a per-holding dollar figure twice — aborting`);
-    }
-  }
+  // Note: no per-holding dollar-leak guardrail here. These are public ETF
+  // tickers, so a stray per-holding price isn't a privacy concern (unlike the
+  // personal podcast, which keeps its guardrail in the live-episode route).
+  // The prompt already instructs percent-only per holding; a hard abort here
+  // false-positived on legitimate news dollar figures ("billion dollars") and
+  // took the whole daily pipeline down.
 
   const wordCount = countWords(script);
   const durationSeconds = estimateDurationSeconds(wordCount);
