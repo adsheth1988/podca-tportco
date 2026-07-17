@@ -22,7 +22,10 @@ export interface PortfolioSnapshot {
 const DEFAULT_QQQ_BASE_VALUE = 100_000; // fictional tracking base for the QQQ podcast
 
 async function fetchPrice(ticker: string): Promise<TickerPrice | null> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=2d`;
+  // range=5d (not 2d) so there's always a buffer of complete daily bars to
+  // fall back on across weekends/holidays — see the previousClose fallback
+  // below.
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 8_000);
 
@@ -36,11 +39,32 @@ async function fetchPrice(ticker: string): Promise<TickerPrice | null> {
 
     if (!res.ok) return null;
     const json = await res.json();
-    const meta = json?.chart?.result?.[0]?.meta;
+    const result = json?.chart?.result?.[0];
+    const meta = result?.meta;
     if (!meta) return null;
 
     const price = meta.regularMarketPrice as number;
-    const prev  = meta.chartPreviousClose as number;
+
+    // meta.chartPreviousClose has been observed to return a stale/incorrect
+    // value when fetched right around market close (caught on the 2026-07-10
+    // AMD episode: it returned a previous close ~$29 off the real prior
+    // session's close, inflating the reported day change). The daily close
+    // bars are more reliable — use the last complete bar before today's
+    // (possibly still-forming) one, falling back to the meta field only if
+    // bar data isn't available.
+    const closes: (number | null)[] = result?.indicators?.quote?.[0]?.close ?? [];
+    const priorCloses = closes.slice(0, -1).filter((c): c is number => c !== null);
+    const barPrevClose = priorCloses.length > 0 ? priorCloses[priorCloses.length - 1] : null;
+    const metaPrevClose = meta.chartPreviousClose as number;
+    const prev = barPrevClose ?? metaPrevClose;
+
+    if (barPrevClose !== null && metaPrevClose && Math.abs(barPrevClose - metaPrevClose) / metaPrevClose > 0.03) {
+      console.warn(
+        `[prices] ${ticker}: chartPreviousClose ($${metaPrevClose}) disagreed with daily bar close ` +
+        `($${barPrevClose}) by >3% — using bar close`
+      );
+    }
+
     const changePercent = ((price - prev) / prev) * 100;
     const changeDollar  = price - prev;
 

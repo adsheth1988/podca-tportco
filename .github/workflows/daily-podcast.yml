@@ -55,32 +55,45 @@ jobs:
         id: date
         run: echo "date=$(TZ='America/New_York' date +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
-      - name: Upload MP3 to GitHub Releases
+      - name: Upload MP3s to GitHub Releases
         continue-on-error: true  # never block the commit step — audio upload is best-effort
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -e
           DATE=${{ steps.date.outputs.date }}
-          TAG="episode-${DATE}"
-          MP3="public/audio/${DATE}.mp3"
 
-          if [ ! -f "$MP3" ]; then
-            echo "MP3 not found at $MP3 — pipeline may have skipped (episode already exists)"
-            exit 0
-          fi
+          # Upload one podcast's MP3. QQQ keeps its original unprefixed tag/
+          # filename; SOXX/MEME use a slug-prefixed scheme to avoid colliding.
+          upload_one() {
+            local SLUG="$1"
+            local PREFIX="" TAG="episode-${DATE}"
+            if [ "$SLUG" != "qqq" ]; then
+              PREFIX="${SLUG}-"
+              TAG="episode-${SLUG}-${DATE}"
+            fi
+            local MP3="public/audio/${PREFIX}${DATE}.mp3"
 
-          # Delete existing release + tag if re-running (--cleanup-tag prevents stale tag blocking re-create)
-          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+            if [ ! -f "$MP3" ]; then
+              echo "[$SLUG] MP3 not found at $MP3 — skipping (pipeline may have skipped or failed)"
+              return 0
+            fi
 
-          gh release create "$TAG" \
-            --title "Episode ${DATE}" \
-            --notes "QQQ Daily Podcast — ${DATE}" \
-            --latest=false
+            # Delete existing release + tag if re-running (--cleanup-tag prevents stale tag blocking re-create)
+            gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
 
-          gh release upload "$TAG" "$MP3" --clobber
+            gh release create "$TAG" \
+              --title "Episode ${DATE} (${SLUG})" \
+              --notes "Daily Podcast — ${SLUG} — ${DATE}" \
+              --latest=false
 
-          echo "Uploaded to: https://github.com/${{ github.repository }}/releases/download/${TAG}/${DATE}.mp3"
+            gh release upload "$TAG" "$MP3" --clobber
+
+            echo "[$SLUG] Uploaded to: https://github.com/${{ github.repository }}/releases/download/${TAG}/${PREFIX}${DATE}.mp3"
+          }
+
+          upload_one "qqq"
+          upload_one "soxx"
+          upload_one "meme"
 
       - name: Commit episode data
         if: always()  # run even if upload failed — episode JSON is independent of audio
