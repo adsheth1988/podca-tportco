@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "gen:stingers": "tsx scripts/generate-intro-stingers.ts",
-    "gen:stinger": "tsx scripts/build-intro-stinger.ts"
+    "gen:stinger": "tsx scripts/build-intro-stinger.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
@@ -27,6 +29,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }

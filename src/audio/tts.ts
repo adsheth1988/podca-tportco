@@ -36,7 +36,7 @@ function requireApiKey(): string {
   return key;
 }
 
-function buildChunks(text: string, maxChars: number): string[] {
+export function buildChunks(text: string, maxChars: number): string[] {
   const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
   const chunks: string[] = [];
   let current = "";

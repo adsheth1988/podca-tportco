@@ -87,6 +87,10 @@ function formatEST(date: Date): string {
   }).replace(",", "") + " ET";
 }
 
+// Pure weighting/P&L math, extracted from fetchPortfolioSnapshot so it's
+// unit-testable without mocking the network fetch. Same filter/normalize/sum
+// logic as before — this is a strict extraction, not a behavior change.
+//
 // The spoken "portfolio closed X%" figure reflects only the holdings marked
 // isPrimaryFocus (undefined counts as primary) — secondary/fallback-only
 // holdings (news sources, never discussed on air) are excluded so the
@@ -95,10 +99,11 @@ function formatEST(date: Date): string {
 // baseValue: for the QQQ podcast this is the fictional $100k tracking base;
 // for the personal podcast, pass the real SnapTrade-derived portfolio total
 // so portfolioValue/portfolioPnL reflect the user's actual account value.
-export async function fetchPortfolioSnapshot(
+export function computeWeightedSnapshot(
   holdings: Holding[],
-  baseValue: number = DEFAULT_QQQ_BASE_VALUE
-): Promise<PortfolioSnapshot> {
+  prices: TickerPrice[],
+  baseValue: number
+): Omit<PortfolioSnapshot, "generatedAtEST"> {
   const primaryHoldings = holdings.filter((h) => h.isPrimaryFocus !== false);
   const totalWeight = primaryHoldings.reduce((s, h) => s + h.weight, 0);
   const normalized = primaryHoldings.map((h) => ({
@@ -106,6 +111,23 @@ export async function fetchPortfolioSnapshot(
     normalizedWeight: totalWeight > 0 ? h.weight / totalWeight : 0,
   }));
 
+  // Weighted portfolio return using normalized weights
+  let portfolioChangePercent = 0;
+  for (const norm of normalized) {
+    const p = prices.find((px) => px.ticker === norm.ticker);
+    if (p) portfolioChangePercent += p.changePercent * norm.normalizedWeight;
+  }
+
+  const portfolioPnL   = (portfolioChangePercent / 100) * baseValue;
+  const portfolioValue = baseValue + portfolioPnL;
+
+  return { prices, portfolioChangePercent, portfolioPnL, portfolioValue };
+}
+
+export async function fetchPortfolioSnapshot(
+  holdings: Holding[],
+  baseValue: number = DEFAULT_QQQ_BASE_VALUE
+): Promise<PortfolioSnapshot> {
   // Yahoo's chart endpoint is unauthenticated and undocumented — cap
   // concurrency instead of firing all requests at once.
   const results = await mapWithConcurrency(
@@ -119,21 +141,8 @@ export async function fetchPortfolioSnapshot(
     .map((r) => r.value)
     .filter((v): v is TickerPrice => v !== null);
 
-  // Weighted portfolio return using normalized weights
-  let portfolioChangePercent = 0;
-  for (const norm of normalized) {
-    const p = prices.find((px) => px.ticker === norm.ticker);
-    if (p) portfolioChangePercent += p.changePercent * norm.normalizedWeight;
-  }
-
-  const portfolioPnL   = (portfolioChangePercent / 100) * baseValue;
-  const portfolioValue = baseValue + portfolioPnL;
-
   return {
-    prices,
-    portfolioChangePercent,
-    portfolioPnL,
-    portfolioValue,
+    ...computeWeightedSnapshot(holdings, prices, baseValue),
     generatedAtEST: formatEST(new Date()),
   };
 }
