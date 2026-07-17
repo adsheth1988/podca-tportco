@@ -13,10 +13,30 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 // Switch to claude-haiku-4-5 if cost becomes a concern after validating.
 const MODEL = "claude-sonnet-4-6";
 
-const TARGET_MINUTES = 7;
+const TARGET_MINUTES = 5;
 // Derived from tts.ts's EFFECTIVE_WPM so this never drifts out of sync with
 // the actual TTS speed again.
 const TARGET_WORD_COUNT = Math.round(EFFECTIVE_WPM * TARGET_MINUTES);
+
+// Section word-count targets as a share of TARGET_WORD_COUNT — these were
+// hardcoded literals tuned for the old 7-minute/1253-word target (50/40/80/
+// 160/800/80/40) until the duration became configurable; keeping the same
+// relative proportions here so a duration change (this file's TARGET_MINUTES,
+// or a future per-podcast override) doesn't silently desync the section
+// breakdown from the top-level word target the way a literal-only edit would.
+const SECTION_WORD_SHARE = {
+  welcome: 0.040,
+  coldOpen: 0.032,
+  marketSnapshot: 0.064,
+  topStory: 0.128,
+  holdingsRundown: 0.640,
+  numbersToWatch: 0.064,
+  outro: 0.032,
+} as const;
+
+function sectionWords(share: number): number {
+  return Math.round(TARGET_WORD_COUNT * share);
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -175,21 +195,21 @@ Target: exactly ${TARGET_WORD_COUNT} words total.
 
 STRUCTURE:
 
-① WELCOME & DATE (~50 words)
+① WELCOME & DATE (~${sectionWords(SECTION_WORD_SHARE.welcome)} words)
    ${welcomeInstruction}
    Keep it factual and punchy.
 
-② COLD OPEN (~40 words)
+② COLD OPEN (~${sectionWords(SECTION_WORD_SHARE.coldOpen)} words)
    Drop straight into the single most important story of the session — no additional introduction.
    Hook the listener immediately. End on a hard factual statement that creates tension.
 
-③ MARKET SNAPSHOT (~80 words)
+③ MARKET SNAPSHOT (~${sectionWords(SECTION_WORD_SHARE.marketSnapshot)} words)
    Two sentences maximum on macro context: what drove the broad market in the session, and one relevant macro data point (Fed, rates, jobs, etc.) if available. Include at least one index-level number (e.g. Nasdaq or S&P 500 % move). Crisp and factual.
 
-④ TOP STORY (~160 words)
+④ TOP STORY (~${sectionWords(SECTION_WORD_SHARE.topStory)} words)
    The deepest dive of the episode. Take the most market-moving development from the holdings news and give it full context: what happened, the specific numbers, what analysts are saying, and what it means for the position in this portfolio. This should feel like a proper news segment.
 
-⑤ HOLDINGS RUNDOWN (~800 words)
+⑤ HOLDINGS RUNDOWN (~${sectionWords(SECTION_WORD_SHARE.holdingsRundown)} words)
    Cover all ${primaryFocusHoldings.length} primary holdings in order of portfolio weight (largest first). Allocate airtime proportionally — heavier weights get more sentences.
    ${holdingRundownOpener}
    Then: one sentence of news context or analyst commentary (if any) → what to watch next.
@@ -197,10 +217,10 @@ STRUCTURE:
    If any primary holding has no news, you may substitute it with one of the SECONDARY HOLDINGS WITH NEWS listed above, but prioritize covering the primary ${primaryFocusHoldings.length}.
    Use natural broadcast transitions ("Turning to...", "Over at...", "Meanwhile...").
 
-⑥ NUMBERS TO WATCH (~80 words)
+⑥ NUMBERS TO WATCH (~${sectionWords(SECTION_WORD_SHARE.numbersToWatch)} words)
    Three specific, concrete data points or events coming in the next 24-48 hours that are directly relevant to this portfolio — earnings releases, Fed speakers, economic prints, product events. Give the exact name, timing, and why it matters for holders, briefly.
 
-⑦ OUTRO (~40 words)
+⑦ OUTRO (~${sectionWords(SECTION_WORD_SHARE.outro)} words)
    Close with exactly: "This is ${identity.showName}. We will be back same time the next business day with tomorrow's news." Then add one forward-looking sentence on what to watch for.
 
 FORMAT RULES (strictly enforced):
