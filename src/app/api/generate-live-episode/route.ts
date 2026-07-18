@@ -7,6 +7,7 @@ import { fetchLiveHoldings } from "@/lib/snaptrade/adapter";
 import { listAllConnections } from "@/lib/db/connections";
 import { savePersonalEpisode, getPersonalEpisode } from "@/lib/db/personalEpisodes";
 import { PERSONAL_PODCAST } from "@/config/podcasts";
+import { isTradingDay, getEstDateISO } from "@/lib/market-calendar";
 
 // Triggered by Vercel Cron (see vercel.json) — not user-facing. Iterates
 // every user with an active brokerage connection; this is the entire
@@ -15,11 +16,6 @@ function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return true; // no secret configured — allow (matches existing generate-episode route's fallback)
   return req.headers.get("authorization") === `Bearer ${secret}`;
-}
-
-function getEstDateISO(): string {
-  const estString = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
-  return new Date(estString).toISOString().slice(0, 10);
 }
 
 function getEstDateLabel(): string {
@@ -96,6 +92,10 @@ async function generateForUser(userId: string, snapTradeUserId: string, userSecr
 export async function POST(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isTradingDay()) {
+    return NextResponse.json({ skipped: "non-trading day" });
   }
 
   const connections = await listAllConnections();
