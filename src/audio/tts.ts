@@ -10,6 +10,7 @@
 
 import fs from "fs/promises";
 import path from "path";
+import { mp3DurationSeconds } from "./mp3-duration";
 
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
 const MODEL  = "gpt-4o-mini-tts";
@@ -111,5 +112,23 @@ export async function withIntroStinger(episodeAudio: Buffer): Promise<Buffer> {
   } catch {
     console.warn("[tts] intro-stinger.mp3 not found — run `npm run gen:stinger`. Skipping intro.");
     return episodeAudio;
+  }
+}
+
+// Measured duration (ms) of an MP3 buffer. Used to place chapter markers on
+// the real audio timeline and to record the episode's true length (which the
+// word-count estimate under-reports). Returns 0 on parse failure.
+export function measureAudioMs(audio: Buffer): number {
+  return Math.round(mp3DurationSeconds(audio) * 1000);
+}
+
+// Duration (ms) of the intro stinger, so chapter times can offset past it.
+// Returns 0 if the stinger is missing/unparseable (chapters then start at 0).
+export async function introStingerMs(): Promise<number> {
+  const introPath = path.join(process.cwd(), "public", "audio", "intro-stinger.mp3");
+  try {
+    return measureAudioMs(await fs.readFile(introPath));
+  } catch {
+    return 0;
   }
 }

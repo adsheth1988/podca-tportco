@@ -1,6 +1,12 @@
 // Episode lifecycle status
 export type EpisodeStatus = "pending" | "generating" | "ready" | "failed";
 
+// A single chapter marker (also embedded in the MP3 as ID3 CHAP frames).
+export interface EpisodeChapter {
+  startMs:              number;           // start offset on the real audio timeline
+  title:                string;
+}
+
 // Stored episode (Neon DB shape — comes in Slice 5)
 export interface Episode {
   id:                   string;
@@ -14,6 +20,7 @@ export interface Episode {
   generatedAt:          string | null;    // ISO 8601
   errorMessage:         string | null;
   createdAt:            string;           // ISO 8601
+  chapters?:            EpisodeChapter[]; // optional — timestamped chapter markers
 }
 
 // Returned by POST /api/generate during development (before Blob storage)

@@ -21,7 +21,8 @@ import path from "path";
 import fs from "fs/promises";
 import { aggregatePortfolioNews } from "../src/lib/news/aggregator";
 import { generatePodcastScript, countWords } from "../src/script/generator";
-import { generateAudio, estimateDurationSeconds, withIntroStinger } from "../src/audio/tts";
+import { generateAudio, estimateDurationSeconds, withIntroStinger, measureAudioMs, introStingerMs } from "../src/audio/tts";
+import { buildChapters, embedChapters } from "../src/audio/chapters";
 import { fetchPortfolioSnapshot } from "../src/lib/prices";
 import { PORTFOLIO_HOLDINGS, type Holding } from "../src/config/portfolio";
 import { SOXX_HOLDINGS } from "../src/config/soxx";
@@ -30,7 +31,7 @@ import { QQQ_PODCAST, SOXX_PODCAST, MEME_PODCAST, type PodcastIdentity } from ".
 import { notifyFailure } from "../src/lib/alerts";
 import { NYSE_HOLIDAYS } from "../src/config/nyse-holidays";
 import { getEstNow, getEstDateISO, isWeekend, isAtOrAfterEstTime } from "../src/lib/market-calendar";
-import type { Episode } from "../src/types/episode";
+import type { Episode, EpisodeChapter } from "../src/types/episode";
 
 // Must match the intended ET fire time in .github/workflows/daily-podcast.yml.
 const PUBLISH_HOUR = 16;
@@ -120,13 +121,32 @@ async function generateOne(config: PodcastConfig, id: string, repo: string): Pro
   // took the whole daily pipeline down.
 
   const wordCount = countWords(script);
-  const durationSeconds = estimateDurationSeconds(wordCount);
-  console.log(`[generate:${slug}] Script: ${wordCount} words (~${Math.round(durationSeconds / 60)} min)`);
+  console.log(`[generate:${slug}] Script: ${wordCount} words`);
 
   // Step 3: Synthesize audio (with the shared spoken intro stinger prepended)
   console.log(`[generate:${slug}] Step 3: Synthesizing audio…`);
-  const audioBuffer = await withIntroStinger(await generateAudio(script));
-  console.log(`[generate:${slug}] Audio: ${Math.round(audioBuffer.length / 1024)}KB`);
+  let audioBuffer = await withIntroStinger(await generateAudio(script));
+
+  // Measure the real audio length (the word-count estimate under-reports it)
+  // and derive chapter markers on that true timeline. Both are best-effort —
+  // any failure here must never break episode generation.
+  let durationSeconds = estimateDurationSeconds(wordCount);
+  let chapters: EpisodeChapter[] = [];
+  try {
+    const totalMs = measureAudioMs(audioBuffer);
+    if (totalMs > 0) {
+      durationSeconds = Math.round(totalMs / 1000);
+      const stingerMs = await introStingerMs();
+      chapters = buildChapters(script, holdings, totalMs, stingerMs);
+      if (chapters.length > 0) {
+        audioBuffer = embedChapters(audioBuffer, chapters, totalMs);
+        console.log(`[generate:${slug}] Embedded ${chapters.length} chapters`);
+      }
+    }
+  } catch (err) {
+    console.warn(`[generate:${slug}] Chapter embedding skipped:`, err instanceof Error ? err.message : err);
+  }
+  console.log(`[generate:${slug}] Audio: ${Math.round(audioBuffer.length / 1024)}KB (~${Math.round(durationSeconds / 60)} min)`);
 
   // Save MP3 (gitignored — GH Actions will upload to GitHub Releases)
   const audioDir = path.join(process.cwd(), "public", "audio");
@@ -148,6 +168,7 @@ async function generateOne(config: PodcastConfig, id: string, repo: string): Pro
     generatedAt: now,
     errorMessage: null,
     createdAt: now,
+    chapters,
   };
 
   // Save individual episode JSON (includes full script for transcript view)
