@@ -1,5 +1,18 @@
 [
   {
+    "id": "2026-07-31",
+    "date": "2026-07-31",
+    "status": "ready",
+    "script": null,
+    "audioUrl": "https://github.com/adsheth1988/podca-tportco/releases/download/episode-meme-2026-07-31/meme-2026-07-31.mp3",
+    "durationSeconds": 324,
+    "wordCount": 966,
+    "articleCount": 33,
+    "generatedAt": "2026-07-31T21:51:00.023Z",
+    "errorMessage": null,
+    "createdAt": "2026-07-31T21:51:00.023Z"
+  },
+  {
     "id": "2026-07-30",
     "date": "2026-07-30",
     "status": "ready",
